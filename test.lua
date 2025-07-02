@@ -286,6 +286,11 @@ if espToggle() or mobToggle() then
             local hrp = p.Character.HumanoidRootPart
             local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
             if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                for _, part in pairs(p.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part:GetPropertyChangedSignal("Position"):Connect(function() end)
+                    end
+                end
                 local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                 local dir = (hrp.Position - Camera.CFrame.Position).Unit
                 local dot = dir:Dot(Camera.CFrame.LookVector)
@@ -330,6 +335,11 @@ if espToggle() or mobToggle() then
             local hrp = mob.HumanoidRootPart
             local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
             if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                for _, part in pairs(mob:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part:GetPropertyChangedSignal("Position"):Connect(function() end)
+                    end
+                end
                 local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                 local dir = (hrp.Position - Camera.CFrame.Position).Unit
                 local dot = dir:Dot(Camera.CFrame.LookVector)
