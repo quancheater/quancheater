@@ -282,9 +282,7 @@ if espToggle() or mobToggle() then
         ed.line.Visible = false
         ed.name.Visible = false
         ed.hp.Visible = false
-        for _, sl in ipairs(ed.skeleton) do
-            sl.Visible = false
-        end
+        for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
     end
 
     for _, p in pairs(Players:GetPlayers()) do
@@ -298,7 +296,7 @@ if espToggle() or mobToggle() then
                 local dir = (hrp.Position - Camera.CFrame.Position).Unit
                 local dot = dir:Dot(Camera.CFrame.LookVector)
 
-                if onScreen and dot > 0 then
+                if espToggle() and onScreen and dot > 0 then
                     if not ESPdata[p] then initESP(p) end
                     local ed = ESPdata[p]
                     local sy = math.clamp(2000 / distance, 30, 200)
@@ -332,7 +330,6 @@ if espToggle() or mobToggle() then
                             sl.Visible = false
                         end
                     end
-
                     playerESPCount += 1
                 else
                     table.insert(alertEnemies, dir)
@@ -352,7 +349,7 @@ if espToggle() or mobToggle() then
                 local dir = (hrp.Position - Camera.CFrame.Position).Unit
                 local dot = dir:Dot(Camera.CFrame.LookVector)
 
-                if onScreen and dot > 0 then
+                if mobToggle() and onScreen and dot > 0 then
                     if not ESPdata[mob] then initESP(mob) end
                     local ed = ESPdata[mob]
                     local sy = math.clamp(2000 / distance, 30, 200)
@@ -377,7 +374,6 @@ if espToggle() or mobToggle() then
                     for _, sl in ipairs(ed.skeleton) do
                         sl.Visible = false
                     end
-
                     mobESPCount += 1
                 else
                     table.insert(alertEnemies, dir)
@@ -392,7 +388,7 @@ if espToggle() or mobToggle() then
     counter.TextColor3 = Color3.fromRGB(255, 255, 0)
     counter.Visible = true
 
-    for i, dir in ipairs(alertEnemies) do
+    for _, dir in ipairs(alertEnemies) do
         local angle = math.atan2(dir.Z, dir.X)
         local dotPos = screenCenter + Vector2.new(math.cos(angle), math.sin(angle)) * alertRadius
 
