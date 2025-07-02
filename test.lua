@@ -85,7 +85,6 @@ local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 90)
 local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
 local fovToggle = addToggle(tabFrames["ESP"], "Draw FOV", 210)
 local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
-local itemToggle = addToggle(tabFrames["ESP"], "Item ESP", 50)
 local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
 local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
 
@@ -138,38 +137,7 @@ RunService.RenderStepped:Connect(function()
 	if flyToggle() and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
 		LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
 	end
-
-for obj, txt in pairs(Items) do
-	if not obj:IsDescendantOf(workspace) then
-		txt:Remove()
-		Items[obj] = nil
-	else
-		txt.Visible = false
-	end
-end
-
-if itemToggle() then
-	for _, o in pairs(workspace:GetDescendants()) do
-		if (o:IsA("Tool") or o:IsA("Part")) and o:IsDescendantOf(workspace) and o:IsA("BasePart") then
-			local pos = o.Position
-			local sp, on = Camera:WorldToViewportPoint(pos)
-			local dir = (pos - Camera.CFrame.Position).Unit
-			local dot = dir:Dot(Camera.CFrame.LookVector)
-
-			if not Items[o] then
-				local ii = Drawing.new("Text")
-				ii.Size = 13 ii.Color = Color3.new(1, 1, 1)
-				ii.Center = true ii.Outline = true
-				Items[o] = ii
-			end
-
-			Items[o].Position = Vector2.new(sp.X, sp.Y)
-			Items[o].Text = o.Name
-			Items[o].Visible = on and dot > 0
-		end
-	end
-end
-
+	
 for obj, txt in pairs(ItemPick) do
 	if not obj:IsDescendantOf(workspace) then
 		txt:Remove()
@@ -203,6 +171,47 @@ if itemPickToggle() then
 			ItemPick[o].Position = Vector2.new(sp.X, sp.Y)
 			ItemPick[o].Text = "[Pick] " .. o.Name
 			ItemPick[o].Visible = on and dot > 0
+		end
+	end
+end
+
+for obj, txt in pairs(ItemPick) do
+	if not obj:IsDescendantOf(workspace) then
+		txt:Remove()
+		ItemPick[obj] = nil
+	else
+		txt.Visible = false
+	end
+end
+
+if itemPickToggle() then
+	for _, o in pairs(workspace:GetDescendants()) do
+		if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
+			local pos
+			if o:IsA("Model") then
+				pos = o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position
+			else
+				pos = o.Position
+			end
+
+			local sp, on = Camera:WorldToViewportPoint(pos)
+			local dir = (pos - Camera.CFrame.Position).Unit
+			local dot = dir:Dot(Camera.CFrame.LookVector)
+
+			if not ItemPick[o] then
+				local txt = Drawing.new("Text")
+				txt.Size = 13
+				txt.Color = Color3.fromRGB(0, 255, 255)
+				txt.Center = true
+				txt.Outline = true
+				txt.Visible = false
+				ItemPick[o] = txt
+			end
+
+			local draw = ItemPick[o]
+			draw.Position = Vector2.new(sp.X, sp.Y)
+			draw.Text = "[Pick] " .. o.Name
+			draw.Visible = on and dot > 0
 		end
 	end
 end
