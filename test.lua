@@ -106,16 +106,16 @@ local function addToggle(parent, name, y)
 	return function() return state end
 end
 
-
-local espToggle = addToggle(tabFrames["ESP"], "ESP Master", 10)
-local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 90)
-local highDamageToggle = addToggle(tabFrames["ESP"], "High Damage", 10)
+local espToggle         = addToggle(tabFrames["ESP"], "ESP Master", 10)
+local highDamageToggle  = addToggle(tabFrames["ESP"], "High Damage", 30)
 local magicBulletToggle = addToggle(tabFrames["ESP"], "Magic Bullet", 50)
-local noRecoilToggle = addToggle(tabFrames["ESP"], "noRecoilToggle", 90)
-local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
-local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
-local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
-local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
+local noRecoilToggle    = addToggle(tabFrames["ESP"], "No Recoil", 70)
+local mobToggle         = addToggle(tabFrames["ESP"], "Mob ESP", 90)
+local itemPickToggle    = addToggle(tabFrames["ESP"], "Item Pick ESP", 110)
+local aimbotToggle      = addToggle(tabFrames["ESP"], "Aimbot Lock", 130)
+
+local speedToggle       = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
+local flyToggle         = addToggle(tabFrames["Mem/S&F"], "Fly", 30)
 
 local ESPdata, Items, ItemPick = {}, {}, {}
 local skeletonLines = { {1,2},{2,3},{3,4},{4,5},{2,6},{6,7},{3,8},{8,9},{3,10},{10,11} }
