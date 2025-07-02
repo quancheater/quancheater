@@ -1,4 +1,5 @@
 -- Creat By QuanCheaterVn
+
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -120,14 +121,13 @@ local function initESP(p)
     ESPdata[p] = { box = box, line = line, name = name, hp = hp, skeleton = skl }
 end
 
--- FIXED FOV CIRCLE
+
 local FovCircle = Drawing.new("Circle")
 FovCircle.Color = Color3.fromRGB(0,255,0)
 FovCircle.Thickness = 1
 FovCircle.Radius = 100
 FovCircle.Filled = false
 
--- AIMBOT GET CLOSEST
 local function getClosestTarget()
     local closest, minDist = nil, math.huge
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -201,6 +201,8 @@ if itemPickToggle() then
     end
 end
 
+
+
 if aimbotToggle() then
     local target = nil
     local closest, minDist = nil, math.huge
@@ -226,16 +228,15 @@ if aimbotToggle() then
     end
 end
 
-  if espToggle() then
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
-            local hum = p.Character:FindFirstChild("Humanoid")
-            if hum and hum.Health > 0 then 
+    if espToggle() then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
                 if not ESPdata[p] then initESP(p) end
                 local ed = ESPdata[p]
                 local c = p.Character
                 local hrp = c:FindFirstChild("HumanoidRootPart")
-                if hrp then
+                local hum = c:FindFirstChild("Humanoid")
+                if hrp and hum then
                     local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                     if on then
                         local sy = math.clamp(2000 / (hrp.Position - Camera.CFrame.Position).Magnitude, 30, 200)
@@ -252,36 +253,20 @@ end
                         ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
                         ed.hp.Text = "HP:" .. math.floor(hum.Health)
                         ed.hp.Visible = true
-
                         local joints = getJoints(c)
                         for i, pair in ipairs(skeletonLines) do
                             local a = joints[pair[1]]
                             local b = joints[pair[2]]
                             local sl = ed.skeleton[i]
                             if a and b then
-                                sl.From = a
-                                sl.To = b
-                                sl.Visible = true
-                            else
-                                sl.Visible = false
-                            end
+                                sl.From = a sl.To = b sl.Visible = true
+                            else sl.Visible = false end
                         end
                     end
-                end
-            else
-                if ESPdata[p] then
-                    local ed = ESPdata[p]
-                    ed.box.Visible = false
-                    ed.line.Visible = false
-                    ed.name.Visible = false
-                    ed.hp.Visible = false
-                    for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
                 end
             end
         end
     end
-end
-
 end)
 
 
