@@ -1,5 +1,4 @@
 -- Created By QuanCheaterVN
-
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -9,18 +8,19 @@ local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "QuanCheaterUI"
 
 local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0, 120, 0, 30)
+toggleBtn.Size = UDim2.new(0, 130, 0, 32)
 toggleBtn.Position = UDim2.new(0, 20, 0, 60)
 toggleBtn.Text = "Toggle Menu"
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 170, 90)
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-toggleBtn.Font = Enum.Font.Gotham
+toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.TextSize = 14
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 300, 0, 440)
+frame.Size = UDim2.new(0, 320, 0, 460)
 frame.Position = UDim2.new(0, 20, 0, 100)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
 frame.Visible = true
 frame.Active = true
 frame.Draggable = true
@@ -37,66 +37,45 @@ title.TextSize = 20
 title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundTransparency = 1
 
-local playerESPCount = 0
-local mobESPCount = 0
-local counter = Drawing.new("Text")
-
-local maxESPDistance = 450
-
-if not counter then
-    counter = Instance.new("TextLabel", gui)
-    counter.Size = UDim2.new(0, 300, 0, 30)
-    counter.Position = UDim2.new(0.5, -150, 1, -40)
-    counter.BackgroundTransparency = 0.3
-    counter.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    counter.TextColor3 = Color3.fromRGB(255, 255, 0)
-    counter.Font = Enum.Font.GothamBold
-    counter.TextSize = 18
-    counter.Text = ""
-end
-
-counter.Size = 16
-counter.Center = true
-counter.Outline = true
-counter.Color = Color3.fromRGB(255, 255, 0)
-counter.Position = Vector2.new(Camera.ViewportSize.X / 2, 30)
-counter.Visible = false
-
-
 local tabs = { "ESP", "Mem/S&F" }
 local tabFrames = {}
+
 for i, name in ipairs(tabs) do
-	local tb = Instance.new("TextButton", frame)
-	tb.Text = name
-	tb.Size = UDim2.new(0, 140, 0, 30)
-	tb.Position = UDim2.new(0, (i - 1) * 150 + 10, 0, 40)
-	tb.Font = Enum.Font.Gotham
-	tb.TextSize = 14
-	tb.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	tb.TextColor3 = Color3.new(1, 1, 1)
+	local tabBtn = Instance.new("TextButton", frame)
+	tabBtn.Text = name
+	tabBtn.Size = UDim2.new(0, 150, 0, 28)
+	tabBtn.Position = UDim2.new(0, (i - 1) * 160 + 5, 0, 40)
+	tabBtn.Font = Enum.Font.Gotham
+	tabBtn.TextSize = 14
+	tabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	tabBtn.TextColor3 = Color3.new(1, 1, 1)
 
 	tabFrames[name] = Instance.new("Frame", frame)
 	tabFrames[name].Size = UDim2.new(1, -20, 1, -80)
 	tabFrames[name].Position = UDim2.new(0, 10, 0, 80)
 	tabFrames[name].Visible = false
+	tabFrames[name].BackgroundTransparency = 1
 
-	tb.MouseButton1Click:Connect(function()
+	tabBtn.MouseButton1Click:Connect(function()
 		for _, f in pairs(tabFrames) do f.Visible = false end
 		tabFrames[name].Visible = true
 	end)
 end
+
 tabFrames["ESP"].Visible = true
 
-local function addToggle(parent, name, y)
+local function addToggle(parent, name, order)
 	local state = false
+	local y = (order - 1) * 35
 	local btn = Instance.new("TextButton", parent)
 	btn.Text = name .. ": OFF"
-	btn.Size = UDim2.new(0, 280, 0, 30)
-	btn.Position = UDim2.new(0, 10, 0, y)
+	btn.Size = UDim2.new(1, 0, 0, 30)
+	btn.Position = UDim2.new(0, 0, 0, y)
 	btn.Font = Enum.Font.Gotham
 	btn.TextSize = 14
-	btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.BorderSizePixel = 0
 
 	btn.MouseButton1Click:Connect(function()
 		state = not state
@@ -106,16 +85,16 @@ local function addToggle(parent, name, y)
 	return function() return state end
 end
 
-local espToggle         = addToggle(tabFrames["ESP"], "ESP Master", 10)
-local highDamageToggle  = addToggle(tabFrames["ESP"], "High Damage", 30)
-local magicBulletToggle = addToggle(tabFrames["ESP"], "Magic Bullet", 50)
-local noRecoilToggle    = addToggle(tabFrames["ESP"], "No Recoil", 70)
-local mobToggle         = addToggle(tabFrames["ESP"], "Mob ESP", 90)
-local itemPickToggle    = addToggle(tabFrames["ESP"], "Item Pick ESP", 110)
-local aimbotToggle      = addToggle(tabFrames["ESP"], "Aimbot Lock", 130)
+local espToggle         = addToggle(tabFrames["ESP"], "ESP Master",       1)
+local highDamageToggle  = addToggle(tabFrames["ESP"], "High Damage",      2)
+local magicBulletToggle = addToggle(tabFrames["ESP"], "Magic Bullet",     3)
+local noRecoilToggle    = addToggle(tabFrames["ESP"], "No Recoil",        4)
+local mobToggle         = addToggle(tabFrames["ESP"], "Mob ESP",          5)
+local itemPickToggle    = addToggle(tabFrames["ESP"], "Item Pick ESP",    6)
+local aimbotToggle      = addToggle(tabFrames["ESP"], "Aimbot Lock",      7)
 
-local speedToggle       = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
-local flyToggle         = addToggle(tabFrames["Mem/S&F"], "Fly", 30)
+local speedToggle       = addToggle(tabFrames["Mem/S&F"], "Speed Hack",   1)
+local flyToggle         = addToggle(tabFrames["Mem/S&F"], "Fly",          2)
 
 local ESPdata, Items, ItemPick = {}, {}, {}
 local skeletonLines = { {1,2},{2,3},{3,4},{4,5},{2,6},{6,7},{3,8},{8,9},{3,10},{10,11} }
@@ -226,26 +205,27 @@ if highDamageToggle() then
 	for _, p in pairs(Players:GetPlayers()) do
 		if p ~= LP and p.Character and p.Character:FindFirstChild("Head") then
 			local head = p.Character.Head
-			for _, part in pairs(p.Character:GetDescendants()) do
+			for _, part in pairs(p.Character:GetChildren()) do
 				if part:IsA("BasePart") and part.Name ~= "Head" then
 					part.Size = Vector3.new(0.1, 0.1, 0.1)
-					part.Transparency = 1
 					part.CanCollide = false
+					part.Transparency = 1
 					part.CFrame = head.CFrame
 				end
 			end
 		end
 	end
 end
-
 if magicBulletToggle() then
 	for _, bullet in pairs(workspace:GetDescendants()) do
 		if bullet:IsA("BasePart") and bullet.Name:lower():find("bullet") then
 			for _, enemy in pairs(Players:GetPlayers()) do
 				if enemy ~= LP and enemy.Character and enemy.Character:FindFirstChild("Head") then
 					local head = enemy.Character.Head
-					bullet.CFrame = CFrame.new(bullet.Position, head.Position)
-					bullet.Velocity = (head.Position - bullet.Position).Unit * 3000
+					local direction = (head.Position - bullet.Position).Unit
+					bullet.Velocity = direction * 3000
+					bullet.CFrame = CFrame.lookAt(bullet.Position, head.Position)
+					break -- Chỉ chọn 1 enemy gần nhất
 				end
 			end
 		end
