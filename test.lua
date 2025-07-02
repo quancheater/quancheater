@@ -2,10 +2,9 @@ local Players=game:GetService("Players")
 local LP=Players.LocalPlayer
 local Camera=workspace.CurrentCamera
 local RunService=game:GetService("RunService")
-local UIS=game:GetService("UserInputService")
-
 local gui=Instance.new("ScreenGui",game.CoreGui)
 gui.Name="QuanCheaterUI"
+
 local toggleBtn=Instance.new("TextButton",gui)
 toggleBtn.Size=UDim2.new(0,120,0,30)
 toggleBtn.Position=UDim2.new(0,20,0,60)
@@ -16,9 +15,9 @@ toggleBtn.BackgroundColor3=Color3.fromRGB(0,200,100)
 toggleBtn.TextColor3=Color3.new(1,1,1)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,300,0,360)
+frame.Size=UDim2.new(0,320,0,400)
 frame.Position=UDim2.new(0,20,0,100)
-frame.BackgroundColor3=Color3.fromRGB(25,25,25)
+frame.BackgroundColor3=Color3.fromRGB(30,30,30)
 frame.Active=true
 frame.Draggable=true
 
@@ -32,20 +31,21 @@ title.Font=Enum.Font.GothamBold
 title.TextSize=20
 title.TextColor3=Color3.new(1,1,1)
 
-local tabs={"ESP","Mem/S&F"}
+local tabs={"ESP","Mem/S&F","Player TP"}
 local tabFrames={}
 for i,name in ipairs(tabs)do
     local tb=Instance.new("TextButton",frame)
     tb.Text=name
-    tb.Size=UDim2.new(0,140,0,30)
-    tb.Position=UDim2.new(0,(i-1)*150+10,0,40)
+    tb.Size=UDim2.new(0,100,0,28)
+    tb.Position=UDim2.new(0,(i-1)*105+5,0,38)
     tb.Font=Enum.Font.Gotham
     tb.TextSize=14
     tb.BackgroundColor3=Color3.fromRGB(50,50,50)
     tb.TextColor3=Color3.new(1,1,1)
     tabFrames[name]=Instance.new("Frame",frame)
-    tabFrames[name].Size=UDim2.new(1,-20,1,-80)
-    tabFrames[name].Position=UDim2.new(0,10,0,80)
+    tabFrames[name].Size=UDim2.new(1,-10,1,-75)
+    tabFrames[name].Position=UDim2.new(0,5,0,70)
+    tabFrames[name].BackgroundTransparency=1
     tabFrames[name].Visible=false
     tb.MouseButton1Click:Connect(function()
         for _,f in pairs(tabFrames)do f.Visible=false end
@@ -58,7 +58,7 @@ local function addToggle(parent,name,y)
     local s=false
     local b=Instance.new("TextButton",parent)
     b.Text=name..": OFF"
-    b.Size=UDim2.new(0,280,0,30)
+    b.Size=UDim2.new(0,290,0,28)
     b.Position=UDim2.new(0,10,0,y)
     b.Font=Enum.Font.Gotham
     b.TextSize=14
@@ -72,75 +72,45 @@ local function addToggle(parent,name,y)
 end
 
 local espToggle=addToggle(tabFrames["ESP"],"ESP Master",10)
-local itemToggle=addToggle(tabFrames["ESP"],"Item ESP",50)
-local mobToggle=addToggle(tabFrames["ESP"],"Mob ESP",90)
+local itemToggle=addToggle(tabFrames["ESP"],"Item ESP",45)
+local mobToggle=addToggle(tabFrames["ESP"],"Mob ESP",80)
 
 local sFrame=tabFrames["Mem/S&F"]
 local speedToggle=addToggle(sFrame,"Speed Hack",10)
-local flyToggle=addToggle(sFrame,"Fly",50)
+local flyToggle=addToggle(sFrame,"Fly",45)
 
-local ESPdata,Items,Mobs={},{},{}
+local ESPdata,Items,Mobs={}, {}, {}
 
 local function initESP(p)
-    local box=Drawing.new("Square")
-    box.Thickness=1
-    box.Filled=false
-    box.Color=Color3.fromRGB(255,0,0)
-    local line=Drawing.new("Line")
-    line.Thickness=1
-    line.Color=Color3.fromRGB(255,255,0)
-    local name=Drawing.new("Text")
-    name.Size=13
-    name.Color=Color3.fromRGB(0,255,0)
-    name.Center=true
-    name.Outline=true
-    local hp=Drawing.new("Text")
-    hp.Size=13
-    hp.Color=Color3.fromRGB(255,255,255)
-    hp.Center=true
-    hp.Outline=true
-    local skl={}
-    for i=1,10 do
-        skl[i]=Drawing.new("Line")
-        skl[i].Color=Color3.fromRGB(0,255,255)
-        skl[i].Thickness=1
-    end
+    local box=Drawing.new("Square") box.Thickness=1 box.Filled=false box.Color=Color3.fromRGB(255,0,0)
+    local line=Drawing.new("Line") line.Thickness=1 line.Color=Color3.fromRGB(255,255,0)
+    local name=Drawing.new("Text") name.Size=13 name.Color=Color3.fromRGB(0,255,0) name.Center=true name.Outline=true
+    local hp=Drawing.new("Text") hp.Size=13 hp.Color=Color3.fromRGB(255,255,255) hp.Center=true hp.Outline=true
+    local skl={} for i=1,10 do skl[i]=Drawing.new("Line") skl[i].Color=Color3.fromRGB(0,255,255) skl[i].Thickness=1 end
     ESPdata[p]={box=box,line=line,name=name,hp=hp,skeleton=skl}
 end
 
 local skeletonLines={{1,2},{2,3},{3,4},{4,5},{2,6},{6,7},{3,8},{8,9},{3,10},{10,11}}
-
 local function getJoints(c)
     local parts={
-        c:FindFirstChild("Head"),
-        c:FindFirstChild("UpperTorso") or c:FindFirstChild("Torso"),
+        c:FindFirstChild("Head"), c:FindFirstChild("UpperTorso") or c:FindFirstChild("Torso"),
         c:FindFirstChild("LowerTorso") or c:FindFirstChild("Torso"),
-        c:FindFirstChild("LeftUpperArm"),
-        c:FindFirstChild("LeftLowerArm"),
-        c:FindFirstChild("RightUpperArm"),
-        c:FindFirstChild("RightLowerArm"),
-        c:FindFirstChild("LeftUpperLeg"),
-        c:FindFirstChild("LeftLowerLeg"),
-        c:FindFirstChild("RightUpperLeg"),
-        c:FindFirstChild("RightLowerLeg")
+        c:FindFirstChild("LeftUpperArm"), c:FindFirstChild("LeftLowerArm"),
+        c:FindFirstChild("RightUpperArm"), c:FindFirstChild("RightLowerArm"),
+        c:FindFirstChild("LeftUpperLeg"), c:FindFirstChild("LeftLowerLeg"),
+        c:FindFirstChild("RightUpperLeg"), c:FindFirstChild("RightLowerLeg")
     }
-    local pos={}
-    for i,pr in ipairs(parts)do
-        if pr then
-            local sp,on=Camera:WorldToViewportPoint(pr.Position)
-            if on then pos[i]=Vector2.new(sp.X,sp.Y)end
-        end
-    end
+    local pos={} for i,pr in ipairs(parts)do
+        if pr then local sp,on=Camera:WorldToViewportPoint(pr.Position)
+        if on then pos[i]=Vector2.new(sp.X,sp.Y)end end
     return pos
 end
 
 RunService.RenderStepped:Connect(function()
     if speedToggle() and LP.Character and LP.Character:FindFirstChild("Humanoid")then
-        LP.Character.Humanoid.WalkSpeed=200
-    end
+        LP.Character.Humanoid.WalkSpeed=200 end
     if flyToggle() and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")then
-        LP.Character.HumanoidRootPart.Velocity=Vector3.new(0,50,0)
-    end
+        LP.Character.HumanoidRootPart.Velocity=Vector3.new(0,50,0) end
 
     if espToggle()then
         for _,p in pairs(Players:GetPlayers())do
@@ -172,49 +142,33 @@ RunService.RenderStepped:Connect(function()
                             local a=joints[pair[1]]
                             local b=joints[pair[2]]
                             local sl=ed.skeleton[i]
-                            if a and b then
-                                sl.From=a
-                                sl.To=b
-                                sl.Visible=true
-                            else
-                                sl.Visible=false
-                            end
+                            if a and b then sl.From=a sl.To=b sl.Visible=true else sl.Visible=false end
                         end
                     else
-                        ed.box.Visible=false
-                        ed.line.Visible=false
-                        ed.name.Visible=false
-                        ed.hp.Visible=false
+                        ed.box.Visible=false ed.line.Visible=false ed.name.Visible=false ed.hp.Visible=false
                         for _,sl in ipairs(ed.skeleton)do sl.Visible=false end
                     end
                 end
             end
         end
-    else
-        for _,ed in pairs(ESPdata)do
-            ed.box.Visible=false
-            ed.line.Visible=false
-            ed.name.Visible=false
-            ed.hp.Visible=false
-            for _,sl in ipairs(ed.skeleton)do sl.Visible=false end
-        end
+    else for _,ed in pairs(ESPdata)do
+        ed.box.Visible=false ed.line.Visible=false ed.name.Visible=false ed.hp.Visible=false
+        for _,sl in ipairs(ed.skeleton)do sl.Visible=false end end
     end
 
     for _,t in pairs(Items)do t.Visible=false end
     if itemToggle()then
         for _,o in pairs(workspace:GetDescendants())do
-            if o:IsA("Tool")or o:IsA("Part")then
+            if o:IsA("Tool") then
                 if not Items[o]then
                     local ii=Drawing.new("Text")
-                    ii.Size=13
-                    ii.Color=Color3.new(1,1,1)
-                    ii.Center=true
-                    ii.Outline=true
+                    ii.Size=13 ii.Center=true ii.Outline=true
                     Items[o]=ii
                 end
                 local sp,on=Camera:WorldToViewportPoint(o.Position)
                 Items[o].Position=Vector2.new(sp.X,sp.Y)
                 Items[o].Text=o.Name
+                Items[o].Color=Color3.fromRGB(0,255,0)
                 Items[o].Visible=on
             end
         end
@@ -226,10 +180,7 @@ RunService.RenderStepped:Connect(function()
             if o:IsA("Model")and o:FindFirstChild("Humanoid")and o~=LP.Character then
                 if not Mobs[o]then
                     local mm=Drawing.new("Text")
-                    mm.Size=13
-                    mm.Color=Color3.fromRGB(1,0.4,0.4)
-                    mm.Center=true
-                    mm.Outline=true
+                    mm.Size=13 mm.Center=true mm.Outline=true mm.Color=Color3.fromRGB(255,100,100)
                     Mobs[o]=mm
                 end
                 local hrp=o:FindFirstChild("HumanoidRootPart")
@@ -245,9 +196,42 @@ RunService.RenderStepped:Connect(function()
 end)
 
 Players.PlayerRemoving:Connect(function(p)
-    if ESPdata[p]then
-        ESPdata[p]=nil
-    end
+    if ESPdata[p]then ESPdata[p]=nil end
 end)
 
 for _,v in pairs(getconnections(LP.Idled))do v:Disable()end
+
+-- Teleport Tab
+local tpTab=tabFrames["Player TP"]
+local tpList=Instance.new("ScrollingFrame",tpTab)
+tpList.Size=UDim2.new(1,-20,1,-20)
+tpList.Position=UDim2.new(0,10,0,10)
+tpList.BackgroundColor3=Color3.fromRGB(20,20,20)
+tpList.CanvasSize=UDim2.new(0,0,0,0)
+tpList.ScrollBarThickness=4
+
+local function refreshTP()
+    tpList:ClearAllChildren()
+    local y=0
+    for _,p in ipairs(Players:GetPlayers())do
+        if p~=LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart")then
+            local b=Instance.new("TextButton",tpList)
+            b.Size=UDim2.new(1,-4,0,30)
+            b.Position=UDim2.new(0,2,0,y)
+            b.Text="TP to: "..p.Name
+            b.BackgroundColor3=Color3.fromRGB(50,50,100)
+            b.TextColor3=Color3.new(1,1,1)
+            b.MouseButton1Click:Connect(function()
+                if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")then
+                    LP.Character.HumanoidRootPart.CFrame=p.Character.HumanoidRootPart.CFrame+Vector3.new(0,3,0)
+                end
+            end)
+            y=y+32
+        end
+    end
+    tpList.CanvasSize=UDim2.new(0,0,0,y)
+end
+
+Players.PlayerAdded:Connect(refreshTP)
+Players.PlayerRemoving:Connect(refreshTP)
+refreshTP()
