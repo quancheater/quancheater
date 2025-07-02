@@ -109,8 +109,8 @@ end
 
 local espToggle = addToggle(tabFrames["ESP"], "ESP Master", 10)
 local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 90)
-local highDamageToggle = addToggle(tabFrames["Decor"], "High Damage", 10)
-local magicBulletToggle = addToggle(tabFrames["Decor"], "Magic Bullet", 50)
+local highDamageToggle = addToggle(tabFrames["ESP"], "High Damage", 10)
+local magicBulletToggle = addToggle(tabFrames["ESP"], "Magic Bullet", 50)
 local noRecoilToggle = addToggle(tabFrames["ESP"], "noRecoilToggle", 90)
 local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
 local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
