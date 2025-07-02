@@ -281,7 +281,7 @@ if espToggle() or mobToggle() then
     end
 
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+        if p ~= LP and p.Team ~= LP.Team and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
             local hum = p.Character.Humanoid
             local hrp = p.Character.HumanoidRootPart
             local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
@@ -362,6 +362,7 @@ if espToggle() or mobToggle() then
 else
     counter.Visible = false
 end
+
 end)
 
 Players.PlayerRemoving:Connect(function(p)
