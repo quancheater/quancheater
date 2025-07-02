@@ -1,4 +1,4 @@
-
+-- SERVICES
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local Mouse = LP:GetMouse()
 
+-- GUI SETUP
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "QuanCheaterUI"
 local toggleBtn = Instance.new("TextButton", gui)
@@ -23,7 +24,6 @@ frame.Position = UDim2.new(0, 20, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.Active = true
 frame.Draggable = true
-
 toggleBtn.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
 end)
@@ -36,6 +36,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 20
 title.TextColor3 = Color3.new(1, 1, 1)
 
+-- TABS
 local tabs = { "ESP", "Mem/S&F" }
 local tabFrames = {}
 for i, name in ipairs(tabs) do
@@ -58,6 +59,7 @@ for i, name in ipairs(tabs) do
 end
 tabFrames["ESP"].Visible = true
 
+-- TOGGLES
 local function addToggle(parent, name, y)
     local s = false
     local b = Instance.new("TextButton", parent)
@@ -81,15 +83,20 @@ local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 90)
 local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
 local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
 local fovToggle = addToggle(tabFrames["ESP"], "Draw FOV", 210)
+local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
+local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
 
-local sFrame = tabFrames["Mem/S&F"]
-local speedToggle = addToggle(sFrame, "Speed Hack", 10)
-local flyToggle = addToggle(sFrame, "Fly", 50)
+-- RAYCAST WALL CHECK
+local function isVisible(from, to)
+    local ray = RaycastParams.new()
+    ray.FilterDescendantsInstances = {LP.Character}
+    ray.FilterType = Enum.RaycastFilterType.Blacklist
+    return not workspace:Raycast(from, (to - from).Unit * 1000, ray)
+end
 
+-- ESP + AIMBOT DATA
 local ESPdata, Items, Mobs, ItemPick = {}, {}, {}, {}
-
 local skeletonLines = { {1,2},{2,3},{3,4},{4,5},{2,6},{6,7},{3,8},{8,9},{3,10},{10,11} }
-
 local function getJoints(c)
     local parts = {
         c:FindFirstChild("Head"), c:FindFirstChild("UpperTorso") or c:FindFirstChild("Torso"),
@@ -131,8 +138,9 @@ local function getClosestTarget()
         if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local hrp = p.Character.HumanoidRootPart
             local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-            local dist = (Vector2.new(sp.X, sp.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
-            if onScreen and dist < minDist and dist < FovCircle.Radius then
+            local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+            local dist = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+            if onScreen and dist < minDist and dist < FovCircle.Radius and isVisible(Camera.CFrame.Position, hrp.Position) then
                 closest = hrp
                 minDist = dist
             end
@@ -142,7 +150,7 @@ local function getClosestTarget()
 end
 
 RunService.RenderStepped:Connect(function()
-    FovCircle.Position = Vector2.new(Mouse.X, Mouse.Y)
+    FovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     FovCircle.Visible = fovToggle()
 
     if speedToggle() and LP.Character and LP.Character:FindFirstChild("Humanoid") then
@@ -159,6 +167,11 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
+    for _, ed in pairs(ESPdata) do
+        ed.box.Visible = false ed.line.Visible = false ed.name.Visible = false ed.hp.Visible = false
+        for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+    end
+
     if espToggle() then
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
@@ -169,7 +182,7 @@ RunService.RenderStepped:Connect(function()
                 local hum = c:FindFirstChild("Humanoid")
                 if hrp and hum then
                     local sp, on = Camera:WorldToViewportPoint(hrp.Position)
-                    if on then
+                    if on and isVisible(Camera.CFrame.Position, hrp.Position) then
                         local sy = math.clamp(2000 / (hrp.Position - Camera.CFrame.Position).Magnitude, 30, 200)
                         local sx = sy / 2
                         ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
@@ -186,27 +199,19 @@ RunService.RenderStepped:Connect(function()
                         ed.hp.Visible = true
                         local joints = getJoints(c)
                         for i, pair in ipairs(skeletonLines) do
-                            local a = joints[pair[1]]
-                            local b = joints[pair[2]]
+                            local a, b = joints[pair[1]], joints[pair[2]]
                             local sl = ed.skeleton[i]
                             if a and b then
                                 sl.From = a sl.To = b sl.Visible = true
                             else sl.Visible = false end
                         end
-                    else
-                        ed.box.Visible = false ed.line.Visible = false ed.name.Visible = false ed.hp.Visible = false
-                        for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
                     end
                 end
             end
         end
-    else
-        for _, ed in pairs(ESPdata) do
-            ed.box.Visible = false ed.line.Visible = false ed.name.Visible = false ed.hp.Visible = false
-            for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
-        end
     end
 
+    -- Item ESP
     for _, t in pairs(Items) do t.Visible = false end
     if itemToggle() then
         for _, o in pairs(workspace:GetDescendants()) do
@@ -225,6 +230,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
+    -- Mob ESP
     for _, m in pairs(Mobs) do m.Visible = false end
     if mobToggle() then
         for _, o in pairs(workspace:GetDescendants()) do
@@ -246,6 +252,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
+    -- Item Pick ESP
     for _, t in pairs(ItemPick) do t.Visible = false end
     if itemPickToggle() then
         for _, o in pairs(workspace:GetDescendants()) do
@@ -256,7 +263,7 @@ RunService.RenderStepped:Connect(function()
                     txt.Center = true txt.Outline = true
                     ItemPick[o] = txt
                 end
-                local pos = o:IsA("Model") and o:FindFirstChild("PrimaryPart") or o
+                local pos = o:IsA("Model") and o.PrimaryPart or o
                 if pos and pos.Position then
                     local sp, on = Camera:WorldToViewportPoint(pos.Position)
                     ItemPick[o].Position = Vector2.new(sp.X, sp.Y)
@@ -268,8 +275,8 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- CLEANUP
 Players.PlayerRemoving:Connect(function(p)
     ESPdata[p] = nil
 end)
-
 for _, v in pairs(getconnections(LP.Idled)) do v:Disable() end
