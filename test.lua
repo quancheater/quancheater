@@ -276,6 +276,7 @@ if espToggle() or mobToggle() then
     local topCenter = Vector2.new(screenCenter.X, 0)
     local alertEnemies = {}
     local alertRadius = 60
+    local alertMap = {}
 
     for ent, ed in pairs(ESPdata) do
         ed.box.Visible = false
@@ -332,7 +333,10 @@ if espToggle() or mobToggle() then
                     end
                     playerESPCount += 1
                 else
-                    table.insert(alertEnemies, dir)
+                    local dir = (hrp.Position - Camera.CFrame.Position).Unit
+                    local angle = math.atan2(dir.Z, dir.X)
+                    local rounded = math.floor(angle * 10) / 10
+                    alertMap[rounded] = true
                 end
             end
         end
@@ -376,30 +380,33 @@ if espToggle() or mobToggle() then
                     end
                     mobESPCount += 1
                 else
-                    table.insert(alertEnemies, dir)
+                    local dir = (hrp.Position - Camera.CFrame.Position).Unit
+                    local angle = math.atan2(dir.Z, dir.X)
+                    local rounded = math.floor(angle * 10) / 10
+                    alertMap[rounded] = true
                 end
             end
         end
     end
 
     counter.Text = "ESP: " .. tostring(playerESPCount) .. " | MOB: " .. tostring(mobESPCount)
-    counter.Position = UDim2.new(0.5, -110, 0, 0)
+    counter.Position = UDim2.new(0.5, -130, 0, 22)
     counter.TextSize = 20
+    counter.TextStrokeTransparency = 0.3
     counter.TextColor3 = Color3.fromRGB(255, 255, 0)
+    counter.TextStrokeColor3 = Color3.new(0, 0, 0)
     counter.Visible = true
 
-    for _, dir in ipairs(alertEnemies) do
-        local angle = math.atan2(dir.Z, dir.X)
+    for angle, _ in pairs(alertMap) do
         local dotPos = screenCenter + Vector2.new(math.cos(angle), math.sin(angle)) * alertRadius
-
         local dot = Drawing.new("Circle")
         dot.Position = dotPos
-        dot.Radius = 5
+        dot.Radius = 6
         dot.Filled = true
-        dot.Color = Color3.fromRGB(math.random(180, 255), math.random(50, 180), math.random(80, 255))
+        dot.Thickness = 2
+        dot.Color = Color3.fromRGB(math.random(180,255), math.random(100,200), math.random(100,255))
         dot.Visible = true
-
-        task.delay(0.2, function()
+        task.delay(0.25, function()
             dot:Remove()
         end)
     end
