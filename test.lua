@@ -41,7 +41,7 @@ local playerESPCount = 0
 local mobESPCount = 0
 local counter = Drawing.new("Text")
 
-local maxESPDistance = 250
+local maxESPDistance = 450
 
 if not counter then
     counter = Instance.new("TextLabel", gui)
@@ -237,7 +237,8 @@ end
 
 if aimbotToggle() then
     local target, minDist = nil, math.huge
-    local maxAimDistance = 150 
+    local maxAimDistance = 150
+    local aimFovRadius = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, p in pairs(Players:GetPlayers()) do
@@ -247,13 +248,13 @@ if aimbotToggle() then
 
             if head and hum and hum.Health > 0 then
                 local distance3D = (head.Position - Camera.CFrame.Position).Magnitude
-                if distance3D <= maxAimDistance then 
+                if distance3D <= maxAimDistance then
                     local sp, on = Camera:WorldToViewportPoint(head.Position)
                     local dir = (head.Position - Camera.CFrame.Position).Unit
                     local dot = dir:Dot(Camera.CFrame.LookVector)
                     local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
 
-                    if on and dot > 0 and dist2D < minDist then
+                    if on and dot > 0 and dist2D < aimFovRadius and dist2D < minDist then
                         target = head
                         minDist = dist2D
                     end
@@ -284,11 +285,11 @@ if espToggle() or mobToggle() then
             local hum = p.Character.Humanoid
             local hrp = p.Character.HumanoidRootPart
             local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
-            if distance <= maxESPDistance then
+            if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
                 local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                 local dir = (hrp.Position - Camera.CFrame.Position).Unit
                 local dot = dir:Dot(Camera.CFrame.LookVector)
-                if espToggle() and hum.Health > 0 and on and dot > 0 then
+                if espToggle() and on and dot > 0 then
                     if not ESPdata[p] then initESP(p) end
                     local ed = ESPdata[p]
                     local sy = math.clamp(2000 / distance, 30, 200)
@@ -328,11 +329,11 @@ if espToggle() or mobToggle() then
             local hum = mob.Humanoid
             local hrp = mob.HumanoidRootPart
             local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
-            if distance <= maxESPDistance then
+            if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
                 local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                 local dir = (hrp.Position - Camera.CFrame.Position).Unit
                 local dot = dir:Dot(Camera.CFrame.LookVector)
-                if mobToggle() and hum.Health > 0 and on and dot > 0 then
+                if mobToggle() and on and dot > 0 then
                     if not ESPdata[mob] then initESP(mob) end
                     local ed = ESPdata[mob]
                     local sy = math.clamp(2000 / distance, 30, 200)
