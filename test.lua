@@ -8,35 +8,62 @@ local Mouse = LP:GetMouse()
 
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "QuanCheaterUI"
-local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0, 120, 0, 30)
-toggleBtn.Position = UDim2.new(0, 20, 0, 60)
-toggleBtn.Text = "Toggle Menu"
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-toggleBtn.TextColor3 = Color3.new(1,1,1)
-toggleBtn.Font = Enum.Font.Gotham
-toggleBtn.TextSize = 14
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 300, 0, 440)
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Parent = gui
+toggleBtn.Size = UDim2.new(0, 140, 0, 40)
+toggleBtn.Position = UDim2.new(0, 20, 0, 50)
+toggleBtn.Text = "☰ Toggle Menu"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 90)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 16
+toggleBtn.BorderSizePixel = 0
+toggleBtn.AutoButtonColor = true
+toggleBtn.BackgroundTransparency = 0.1
+toggleBtn.AnchorPoint = Vector2.new(0, 0)
+toggleBtn.TextXAlignment = Enum.TextXAlignment.Center
+toggleBtn.TextYAlignment = Enum.TextYAlignment.Center
+toggleBtn.ZIndex = 2
+toggleBtn.ClipsDescendants = true
+toggleBtn.UICorner = Instance.new("UICorner", toggleBtn)
+toggleBtn.UICorner.CornerRadius = UDim.new(0, 6)
+
+local frame = Instance.new("Frame")
+frame.Parent = gui
+frame.Size = UDim2.new(0, 340, 0, 460)
 frame.Position = UDim2.new(0, 20, 0, 100)
-frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
 frame.Visible = true
 frame.Active = true
 frame.Draggable = true
 
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 10)
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Color = Color3.fromRGB(0, 200, 100)
+stroke.Thickness = 2
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local title = Instance.new("TextLabel")
+title.Parent = frame
+title.Text = "⚙ QuanCheaterVN Menu"
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 20
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+title.BorderSizePixel = 0
+title.TextXAlignment = Enum.TextXAlignment.Center
+
+local titleCorner = Instance.new("UICorner", title)
+titleCorner.CornerRadius = UDim.new(0, 10)
+
 toggleBtn.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
 end)
-
-local title = Instance.new("TextLabel", frame)
-title.Text = "QuanCheaterVN"
-title.Size = UDim2.new(1, 0, 0, 36)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 20
-title.TextColor3 = Color3.new(1,1,1)
-title.BackgroundTransparency = 1
-
 
 local tabs = { "ESP", "Mem/S&F" }
 local tabFrames = {}
@@ -201,10 +228,7 @@ if itemPickToggle() then
     end
 end
 
-
-
 if aimbotToggle() then
-    local target = nil
     local closest, minDist = nil, math.huge
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
@@ -212,9 +236,12 @@ if aimbotToggle() then
         if p ~= LP and p.Character then
             local hrp = p.Character:FindFirstChild("HumanoidRootPart")
             local hum = p.Character:FindFirstChild("Humanoid")
-            if hrp and hum and hum.Health > 0 then
+
+            -- Bỏ qua nếu máu = 0 hoặc cùng team
+            if hrp and hum and hum.Health > 0 and (not p.Team or p.Team ~= LP.Team) then
                 local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                 local dist = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+
                 if on and dist < FovCircle.Radius and dist < minDist then
                     closest = hrp
                     minDist = dist
@@ -228,15 +255,17 @@ if aimbotToggle() then
     end
 end
 
-    if espToggle() then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
+
+if espToggle() then
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
+            local hum = p.Character:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
                 if not ESPdata[p] then initESP(p) end
                 local ed = ESPdata[p]
                 local c = p.Character
                 local hrp = c:FindFirstChild("HumanoidRootPart")
-                local hum = c:FindFirstChild("Humanoid")
-                if hrp and hum then
+                if hrp then
                     local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                     if on then
                         local sy = math.clamp(2000 / (hrp.Position - Camera.CFrame.Position).Magnitude, 30, 200)
@@ -262,11 +291,32 @@ end
                                 sl.From = a sl.To = b sl.Visible = true
                             else sl.Visible = false end
                         end
+                    else
+                        ed.box.Visible = false ed.line.Visible = false ed.name.Visible = false ed.hp.Visible = false
+                        for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
                     end
+                end
+            else
+                if ESPdata[p] then
+                    local ed = ESPdata[p]
+                    ed.box.Visible = false ed.line.Visible = false ed.name.Visible = false ed.hp.Visible = false
+                    for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
                 end
             end
         end
     end
+
+    for p, ed in pairs(ESPdata) do
+        if not table.find(Players:GetPlayers(), p) then
+            ed.box:Remove()
+            ed.line:Remove()
+            ed.name:Remove()
+            ed.hp:Remove()
+            for _, sl in ipairs(ed.skeleton) do sl:Remove() end
+            ESPdata[p] = nil
+        end
+    end
+end
 end)
 
 
