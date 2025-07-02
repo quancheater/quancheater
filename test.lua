@@ -131,17 +131,14 @@ RunService.RenderStepped:Connect(function()
 	FovCircle.Position = center
 	FovCircle.Visible = fovToggle()
 
-	-- Speed Hack
 	if speedToggle() and LP.Character and LP.Character:FindFirstChild("Humanoid") then
 		LP.Character.Humanoid.WalkSpeed = 200
 	end
 
-	-- Fly Hack
 	if flyToggle() and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
 		LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
 	end
 
-	-- Item ESP
 	for obj, txt in pairs(Items) do
 		if not obj:IsDescendantOf(workspace) then
 			txt:Remove()
@@ -166,8 +163,7 @@ RunService.RenderStepped:Connect(function()
 			end
 		end
 	end
-
-	-- Pickable Item ESP
+	
 	for obj, txt in pairs(ItemPick) do
 		if not obj:IsDescendantOf(workspace) then
 			txt:Remove()
@@ -199,7 +195,6 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- Aimbot
 	if aimbotToggle() then
 		local target, minDist = nil, math.huge
 		for _, p in pairs(Players:GetPlayers()) do
@@ -218,43 +213,87 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- ESP
-	if espToggle() then
-		for _, p in pairs(Players:GetPlayers()) do
-			if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
-				if not ESPdata[p] then initESP(p) end
-				local ed = ESPdata[p]
-				local hrp = p.Character.HumanoidRootPart
-				local hum = p.Character.Humanoid
+    if espToggle() or mobToggle() then
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+			if not ESPdata[p] then initESP(p) end
+			local ed = ESPdata[p]
+			local hrp = p.Character.HumanoidRootPart
+			local hum = p.Character.Humanoid
+			local sp, on = Camera:WorldToViewportPoint(hrp.Position)
+			local dir = (hrp.Position - Camera.CFrame.Position).Unit
+			local dot = dir:Dot(Camera.CFrame.LookVector)
+
+			if espToggle() and hum.Health > 0 and on and dot > 0 then
+				local sy = math.clamp(2000 / (hrp.Position - Camera.CFrame.Position).Magnitude, 30, 200)
+				local sx = sy / 2
+				ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
+				ed.box.Size = Vector2.new(sx, sy)
+				ed.box.Visible = true
+				ed.line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+				ed.line.To = Vector2.new(sp.X, sp.Y)
+				ed.line.Visible = true
+				ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
+				ed.name.Text = p.Name
+				ed.name.Visible = true
+				ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
+				ed.hp.Text = "HP: " .. math.floor(hum.Health)
+				ed.hp.Visible = true
+
+				local joints = getJoints(p.Character)
+				for i, pair in ipairs(skeletonLines) do
+					local a, b = joints[pair[1]], joints[pair[2]]
+					local sl = ed.skeleton[i]
+					if a and b then sl.From = a sl.To = b sl.Visible = true else sl.Visible = false end
+				end
+			else
+				if ESPdata[p] then
+					local ed = ESPdata[p]
+					ed.box.Visible = false
+					ed.line.Visible = false
+					ed.name.Visible = false
+					ed.hp.Visible = false
+					for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+				end
+			end
+		end
+	end
+	
+	if mobToggle() then
+		for _, mob in pairs(workspace:GetDescendants()) do
+			if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
+				local hum = mob:FindFirstChild("Humanoid")
+				local hrp = mob:FindFirstChild("HumanoidRootPart")
 				if hum.Health > 0 then
+					if not ESPdata[mob] then initESP(mob) end
+					local ed = ESPdata[mob]
 					local sp, on = Camera:WorldToViewportPoint(hrp.Position)
-					if on then
+					local dir = (hrp.Position - Camera.CFrame.Position).Unit
+					local dot = dir:Dot(Camera.CFrame.LookVector)
+
+					if on and dot > 0 then
 						local sy = math.clamp(2000 / (hrp.Position - Camera.CFrame.Position).Magnitude, 30, 200)
 						local sx = sy / 2
 						ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
 						ed.box.Size = Vector2.new(sx, sy)
 						ed.box.Visible = true
-						ed.line.From = center
+						ed.line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 						ed.line.To = Vector2.new(sp.X, sp.Y)
 						ed.line.Visible = true
 						ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
-						ed.name.Text = p.Name
+						ed.name.Text = mob.Name
 						ed.name.Visible = true
 						ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
 						ed.hp.Text = "HP: " .. math.floor(hum.Health)
 						ed.hp.Visible = true
 
-						local joints = getJoints(p.Character)
-						for i, pair in ipairs(skeletonLines) do
-							local a, b = joints[pair[1]], joints[pair[2]]
-							local sl = ed.skeleton[i]
-							if a and b then sl.From = a sl.To = b sl.Visible = true else sl.Visible = false end
-						end
+						for _, sl in ipairs(ed.skeleton) do sl.Visible = false end 
 					end
 				end
 			end
 		end
 	end
+end
 end)
 
 Players.PlayerRemoving:Connect(function(p)
