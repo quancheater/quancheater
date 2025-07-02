@@ -109,6 +109,8 @@ end
 
 local espToggle = addToggle(tabFrames["ESP"], "ESP Master", 10)
 local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 90)
+local highDamageToggle = addToggle(tabFrames["Decor"], "High Damage", 10)
+local magicBulletToggle = addToggle(tabFrames["Decor"], "Magic Bullet", 50)
 local noRecoilToggle = addToggle(tabFrames["ESP"], "noRecoilToggle", 90)
 local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
 local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
@@ -220,6 +222,36 @@ else
 	end
 end
 
+if highDamageToggle() then
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LP and p.Character and p.Character:FindFirstChild("Head") then
+			local head = p.Character.Head
+			for _, part in pairs(p.Character:GetDescendants()) do
+				if part:IsA("BasePart") and part.Name ~= "Head" then
+					part.Size = Vector3.new(0.1, 0.1, 0.1)
+					part.Transparency = 1
+					part.CanCollide = false
+					part.CFrame = head.CFrame
+				end
+			end
+		end
+	end
+end
+
+if magicBulletToggle() then
+	for _, bullet in pairs(workspace:GetDescendants()) do
+		if bullet:IsA("BasePart") and bullet.Name:lower():find("bullet") then
+			for _, enemy in pairs(Players:GetPlayers()) do
+				if enemy ~= LP and enemy.Character and enemy.Character:FindFirstChild("Head") then
+					local head = enemy.Character.Head
+					bullet.CFrame = CFrame.new(bullet.Position, head.Position)
+					bullet.Velocity = (head.Position - bullet.Position).Unit * 3000
+				end
+			end
+		end
+	end
+end
+
   	if noRecoilToggle() then
 		local cam = workspace.CurrentCamera
 		if cam and cam:FindFirstChild("RecoilScript") then
@@ -236,7 +268,9 @@ end
 	end
 
 if aimbotToggle() then
-    local target, minDist = nil, math.huge
+    local target = nil
+    local minDist = math.huge
+    local minHealth = math.huge
     local maxAimDistance = 150
     local aimFovRadius = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -246,7 +280,7 @@ if aimbotToggle() then
             local head = p.Character:FindFirstChild("Head")
             local hum = p.Character:FindFirstChild("Humanoid")
 
-            if head and hum and hum.Health > 0 then
+            if head and hum and hum.Health > 0 and hum.Health < math.huge then
                 local distance3D = (head.Position - Camera.CFrame.Position).Magnitude
                 if distance3D <= maxAimDistance then
                     local sp, on = Camera:WorldToViewportPoint(head.Position)
@@ -254,9 +288,12 @@ if aimbotToggle() then
                     local dot = dir:Dot(Camera.CFrame.LookVector)
                     local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
 
-                    if on and dot > 0 and dist2D < aimFovRadius and dist2D < minDist then
-                        target = head
-                        minDist = dist2D
+                    if on and dot > 0 and dist2D < aimFovRadius then
+                        if dist2D < minDist or (math.abs(dist2D - minDist) < 1 and hum.Health < minHealth) then
+                            target = head
+                            minDist = dist2D
+                            minHealth = hum.Health
+                        end
                     end
                 end
             end
