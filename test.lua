@@ -141,92 +141,59 @@ RunService.RenderStepped:Connect(function()
 	FovCircle.Position = center
 	FovCircle.Visible = fovToggle()
 
+	-- Speed Hack
 	if speedToggle() and LP.Character and LP.Character:FindFirstChild("Humanoid") then
 		LP.Character.Humanoid.WalkSpeed = 200
 	end
 
+	-- Fly Hack
 	if flyToggle() and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
 		LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
 	end
-	
-for obj, txt in pairs(ItemPick) do
-	if not obj:IsDescendantOf(workspace) then
-		txt:Remove()
-		ItemPick[obj] = nil
-	else
-		txt.Visible = false
-	end
-end
 
-if itemPickToggle() then
-	for _, o in pairs(workspace:GetDescendants()) do
-		if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
-			if not ItemPick[o] then
-				local txt = Drawing.new("Text")
-				txt.Size = 13 txt.Color = Color3.fromRGB(0, 255, 255)
-				txt.Center = true txt.Outline = true
-				ItemPick[o] = txt
-			end
-
-			local pos
-			if o:IsA("Model") then
-				pos = o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position
-			else
-				pos = o.Position
-			end
-
-			local sp, on = Camera:WorldToViewportPoint(pos)
-			local dir = (pos - Camera.CFrame.Position).Unit
-			local dot = dir:Dot(Camera.CFrame.LookVector)
-
-			ItemPick[o].Position = Vector2.new(sp.X, sp.Y)
-			ItemPick[o].Text = "[Pick] " .. o.Name
-			ItemPick[o].Visible = on and dot > 0
+	-- Dọn Item ESP
+	for obj, txt in pairs(ItemPick) do
+		if not obj:IsDescendantOf(workspace) then
+			txt:Remove()
+			ItemPick[obj] = nil
+		else
+			txt.Visible = false
 		end
 	end
-end
 
-for obj, txt in pairs(ItemPick) do
-	if not obj:IsDescendantOf(workspace) then
-		txt:Remove()
-		ItemPick[obj] = nil
-	else
-		txt.Visible = false
-	end
-end
+	-- Vẽ Item ESP (pickable)
+	if itemPickToggle() then
+		for _, o in pairs(workspace:GetDescendants()) do
+			if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
+				local pos
+				if o:IsA("Model") then
+					pos = o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position
+				else
+					pos = o.Position
+				end
 
-if itemPickToggle() then
-	for _, o in pairs(workspace:GetDescendants()) do
-		if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
-			local pos
-			if o:IsA("Model") then
-				pos = o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position
-			else
-				pos = o.Position
+				local sp, on = Camera:WorldToViewportPoint(pos)
+				local dir = (pos - Camera.CFrame.Position).Unit
+				local dot = dir:Dot(Camera.CFrame.LookVector)
+
+				if not ItemPick[o] then
+					local txt = Drawing.new("Text")
+					txt.Size = 13
+					txt.Color = Color3.fromRGB(0, 255, 255)
+					txt.Center = true
+					txt.Outline = true
+					ItemPick[o] = txt
+				end
+
+				local draw = ItemPick[o]
+				draw.Position = Vector2.new(sp.X, sp.Y)
+				draw.Text = "[Pick] " .. o.Name
+				draw.Visible = on and dot > 0
 			end
-
-			local sp, on = Camera:WorldToViewportPoint(pos)
-			local dir = (pos - Camera.CFrame.Position).Unit
-			local dot = dir:Dot(Camera.CFrame.LookVector)
-
-			if not ItemPick[o] then
-				local txt = Drawing.new("Text")
-				txt.Size = 13
-				txt.Color = Color3.fromRGB(0, 255, 255)
-				txt.Center = true
-				txt.Outline = true
-				txt.Visible = false
-				ItemPick[o] = txt
-			end
-
-			local draw = ItemPick[o]
-			draw.Position = Vector2.new(sp.X, sp.Y)
-			draw.Text = "[Pick] " .. o.Name
-			draw.Visible = on and dot > 0
 		end
 	end
-end
 
+	-- Aimbot Logic
 	if aimbotToggle() then
 		local target, minDist = nil, math.huge
 		for _, p in pairs(Players:GetPlayers()) do
@@ -235,8 +202,12 @@ end
 				local sp, on = Camera:WorldToViewportPoint(hrp.Position)
 				local dist = (Vector2.new(sp.X, sp.Y) - center).Magnitude
 				if on and dist < FovCircle.Radius and dist < minDist then
-					target = hrp
-					minDist = dist
+					local dir = (hrp.Position - Camera.CFrame.Position).Unit
+					local dot = dir:Dot(Camera.CFrame.LookVector)
+					if dot > 0 then
+						target = hrp
+						minDist = dist
+					end
 				end
 			end
 		end
@@ -245,97 +216,75 @@ end
 		end
 	end
 
-if espToggle() or mobToggle() then
-	playerESPCount = 0
-	mobESPCount = 0
-	for _, p in pairs(Players:GetPlayers()) do
-		if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
-			local hum = p.Character.Humanoid
-			local hrp = p.Character.HumanoidRootPart
-			local sp, on = Camera:WorldToViewportPoint(hrp.Position)
-			local dir = (hrp.Position - Camera.CFrame.Position).Unit
-			local dot = dir:Dot(Camera.CFrame.LookVector)
-			if espToggle() and hum.Health > 0 and on and dot > 0 then
-				if not ESPdata[p] then initESP(p) end
-				local ed = ESPdata[p]
-				local sy = math.clamp(2000 / (hrp.Position - Camera.CFrame.Position).Magnitude, 30, 200)
-				local sx = sy / 2
-				ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
-				ed.box.Size = Vector2.new(sx, sy)
-				ed.box.Visible = true
-				ed.line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-				ed.line.To = Vector2.new(sp.X, sp.Y)
-				ed.line.Visible = true
-				ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
-				ed.name.Text = p.Name
-				ed.name.Visible = true
-				ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
-				ed.hp.Text = "HP: " .. math.floor(hum.Health)
-				ed.hp.Visible = true
-				local joints = getJoints(p.Character)
-				for i, pair in ipairs(skeletonLines) do
-					local a, b = joints[pair[1]], joints[pair[2]]
-					local sl = ed.skeleton[i]
-					if a and b then sl.From = a sl.To = b sl.Visible = true else sl.Visible = false end
-				end
-				playerESPCount += 1
-			else
-				if ESPdata[p] then
-					local ed = ESPdata[p]
-					ed.box.Visible = false
-					ed.line.Visible = false
-					ed.name.Visible = false
-					ed.hp.Visible = false
-					for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
-				end
-			end
-		end
-	end
-	for _, mob in pairs(workspace:GetDescendants()) do
-		if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
-			local hum = mob.Humanoid
-			local hrp = mob.HumanoidRootPart
-			local sp, on = Camera:WorldToViewportPoint(hrp.Position)
-			local dir = (hrp.Position - Camera.CFrame.Position).Unit
-			local dot = dir:Dot(Camera.CFrame.LookVector)
-			if mobToggle() and hum.Health > 0 and on and dot > 0 then
-				if not ESPdata[mob] then initESP(mob) end
-				local ed = ESPdata[mob]
-				local sy = math.clamp(2000 / (hrp.Position - Camera.CFrame.Position).Magnitude, 30, 200)
-				local sx = sy / 2
-				ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
-				ed.box.Size = Vector2.new(sx, sy)
-				ed.box.Visible = true
-				ed.line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-				ed.line.To = Vector2.new(sp.X, sp.Y)
-				ed.line.Visible = true
-				ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
-				ed.name.Text = mob.Name
-				ed.name.Visible = true
-				ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
-				ed.hp.Text = "HP: " .. math.floor(hum.Health)
-				ed.hp.Visible = true
-				for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
-				mobESPCount += 1
-			else
-				if ESPdata[mob] then
-					local ed = ESPdata[mob]
-					ed.box.Visible = false
-					ed.line.Visible = false
-					ed.name.Visible = false
-					ed.hp.Visible = false
-					for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+	-- ESP + MOB ESP
+	local playerESPCount = 0
+	local mobESPCount = 0
+
+	if espToggle() or mobToggle() then
+		for _, obj in pairs(workspace:GetDescendants()) do
+			local isPlayer = Players:GetPlayerFromCharacter(obj)
+			local isMob = not isPlayer and obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart")
+
+			if (isPlayer and espToggle()) or (isMob and mobToggle()) then
+				local hum = obj:FindFirstChild("Humanoid")
+				local hrp = obj:FindFirstChild("HumanoidRootPart")
+				if hum and hrp and hum.Health > 0 then
+					local sp, on = Camera:WorldToViewportPoint(hrp.Position)
+					local dir = (hrp.Position - Camera.CFrame.Position).Unit
+					local dot = dir:Dot(Camera.CFrame.LookVector)
+
+					if on and dot > 0 then
+						if not ESPdata[obj] then initESP(obj) end
+						local ed = ESPdata[obj]
+						local sy = math.clamp(2000 / (hrp.Position - Camera.CFrame.Position).Magnitude, 30, 200)
+						local sx = sy / 2
+
+						ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
+						ed.box.Size = Vector2.new(sx, sy)
+						ed.box.Visible = true
+						ed.line.From = center
+						ed.line.To = Vector2.new(sp.X, sp.Y)
+						ed.line.Visible = true
+						ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
+						ed.name.Text = obj.Name
+						ed.name.Visible = true
+						ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
+						ed.hp.Text = "HP: " .. math.floor(hum.Health)
+						ed.hp.Visible = true
+
+						if isPlayer then
+							local joints = getJoints(obj)
+							for i, pair in ipairs(skeletonLines) do
+								local a, b = joints[pair[1]], joints[pair[2]]
+								local sl = ed.skeleton[i]
+								if a and b then sl.From = a sl.To = b sl.Visible = true else sl.Visible = false end
+							end
+							playerESPCount += 1
+						else
+							for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+							mobESPCount += 1
+						end
+					else
+						if ESPdata[obj] then
+							local ed = ESPdata[obj]
+							ed.box.Visible = false
+							ed.line.Visible = false
+							ed.name.Visible = false
+							ed.hp.Visible = false
+							for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+						end
+					end
 				end
 			end
 		end
+		counter.Text = "ESP: " .. tostring(playerESPCount) .. " | MOB: " .. tostring(mobESPCount)
+		counter.Visible = true
+	else
+		counter.Visible = false
 	end
-	counter.Text = "ESP: " .. tostring(playerESPCount) .. " | MOB: " .. tostring(mobESPCount)
-	counter.Visible = true
-else
-	counter.Visible = false
-end
 end)
 
+-- Cleanup ESP on player leave
 Players.PlayerRemoving:Connect(function(p)
 	if ESPdata[p] then
 		for _, d in pairs(ESPdata[p]) do
