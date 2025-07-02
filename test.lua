@@ -274,9 +274,8 @@ if espToggle() or mobToggle() then
 
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local topCenter = Vector2.new(screenCenter.X, 0)
-    local alertEnemies = {}
-    local alertRadius = 60
     local alertMap = {}
+    local alertRadius = 60
 
     for ent, ed in pairs(ESPdata) do
         ed.box.Visible = false
@@ -375,9 +374,7 @@ if espToggle() or mobToggle() then
                     ed.hp.Text = "HP: " .. math.floor(hum.Health)
                     ed.hp.Visible = true
 
-                    for _, sl in ipairs(ed.skeleton) do
-                        sl.Visible = false
-                    end
+                    for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
                     mobESPCount += 1
                 else
                     local dir = (hrp.Position - Camera.CFrame.Position).Unit
@@ -389,12 +386,23 @@ if espToggle() or mobToggle() then
         end
     end
 
+    if not counter then
+        counter = Instance.new("TextLabel")
+        counter.Size = UDim2.new(0, 300, 0, 32)
+        counter.AnchorPoint = Vector2.new(0.5, 0)
+        counter.Position = UDim2.new(0.5, 0, 0, 22)
+        counter.BackgroundTransparency = 1
+        counter.TextColor3 = Color3.fromRGB(255, 255, 0)
+        counter.TextStrokeColor3 = Color3.new(0, 0, 0)
+        counter.TextStrokeTransparency = 0.3
+        counter.Font = Enum.Font.GothamBold
+        counter.TextSize = 22
+        counter.Name = "ESPCount"
+        counter.ZIndex = 9999
+        counter.Parent = game.CoreGui
+    end
+
     counter.Text = "ESP: " .. tostring(playerESPCount) .. " | MOB: " .. tostring(mobESPCount)
-    counter.Position = UDim2.new(0.5, -130, 0, 22)
-    counter.TextSize = 20
-    counter.TextStrokeTransparency = 0.3
-    counter.TextColor3 = Color3.fromRGB(255, 255, 0)
-    counter.TextStrokeColor3 = Color3.new(0, 0, 0)
     counter.Visible = true
 
     for angle, _ in pairs(alertMap) do
@@ -403,15 +411,12 @@ if espToggle() or mobToggle() then
         dot.Position = dotPos
         dot.Radius = 6
         dot.Filled = true
-        dot.Thickness = 2
-        dot.Color = Color3.fromRGB(math.random(180,255), math.random(100,200), math.random(100,255))
+        dot.Color = Color3.fromHSV(angle % 1, 1, 1)
         dot.Visible = true
-        task.delay(0.25, function()
-            dot:Remove()
-        end)
+        task.delay(0.3, function() dot:Remove() end)
     end
 else
-    counter.Visible = false
+    if counter then counter.Visible = false end
 end
 end)
 
