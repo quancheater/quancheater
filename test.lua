@@ -152,8 +152,6 @@ for obj, txt in pairs(ItemPick) do
 	if not obj:IsDescendantOf(workspace) then
 		txt:Remove()
 		ItemPick[obj] = nil
-	else
-		txt.Visible = false
 	end
 end
 
@@ -161,11 +159,21 @@ if itemPickToggle() then
 	for _, o in pairs(workspace:GetDescendants()) do
 		if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
 			local pos
+
 			if o:IsA("Model") then
 				if not o.PrimaryPart then
-					o:MakeJoints() -- ensure Pivot exists
+					local primary = o:FindFirstChild("HumanoidRootPart") or o:FindFirstChildWhichIsA("BasePart")
+					if primary then
+						pcall(function() o.PrimaryPart = primary end)
+					end
 				end
-				pos = o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position
+				if o.PrimaryPart then
+					pos = o.PrimaryPart.Position
+				else
+					local success
+					success, pos = pcall(function() return o:GetPivot().Position end)
+					if not success then continue end
+				end
 			else
 				pos = o.Position
 			end
@@ -180,6 +188,7 @@ if itemPickToggle() then
 				txt.Color = Color3.fromRGB(0, 255, 255)
 				txt.Center = true
 				txt.Outline = true
+				txt.Visible = false
 				ItemPick[o] = txt
 			end
 
@@ -188,6 +197,10 @@ if itemPickToggle() then
 			draw.Text = "[Pick] " .. o.Name
 			draw.Visible = onScreen and inFront
 		end
+	end
+else
+	for _, txt in pairs(ItemPick) do
+		txt.Visible = false
 	end
 end
 
