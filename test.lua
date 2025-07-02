@@ -204,25 +204,37 @@ else
 	end
 end
 
-	if aimbotToggle() then
-		local target, minDist = nil, math.huge
-		for _, p in pairs(Players:GetPlayers()) do
-			if p ~= LP and p.Team ~= LP.Team and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-				local hrp = p.Character.HumanoidRootPart
+if aimbotToggle() and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+	local target = nil
+	local minDist = math.huge
+	local minHP = math.huge
+
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LP and p.Team ~= LP.Team and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+			local hum = p.Character.Humanoid
+			local hrp = p.Character.HumanoidRootPart
+
+			if hum.Health > 0 then
 				local sp, on = Camera:WorldToViewportPoint(hrp.Position)
 				local dir = (hrp.Position - Camera.CFrame.Position).Unit
 				local dot = dir:Dot(Camera.CFrame.LookVector)
-				local dist = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-				if on and dot > 0 and dist < minDist then
-					target = hrp
-					minDist = dist
+
+				if on and dot > 0 then
+					local dist = (Camera.CFrame.Position - hrp.Position).Magnitude
+					if dist < minDist or (math.abs(dist - minDist) <= 5 and hum.Health < minHP) then
+						target = hrp
+						minDist = dist
+						minHP = hum.Health
+					end
 				end
 			end
 		end
-		if target then
-			Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
-		end
 	end
+
+	if target then
+		Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+	end
+end
 
 	if espToggle() or mobToggle() then
 		playerESPCount = 0
