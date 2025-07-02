@@ -1,70 +1,35 @@
 -- Creat By QuanCheaterVn
 
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
-local Mouse = LP:GetMouse()
-
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "QuanCheaterUI"
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0, 120, 0, 30)
+toggleBtn.Position = UDim2.new(0, 20, 0, 60)
+toggleBtn.Text = "Toggle Menu"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+toggleBtn.TextColor3 = Color3.new(1,1,1)
+toggleBtn.Font = Enum.Font.Gotham
+toggleBtn.TextSize = 14
 
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Parent = gui
-toggleBtn.Size = UDim2.new(0, 140, 0, 40)
-toggleBtn.Position = UDim2.new(0, 20, 0, 50)
-toggleBtn.Text = "☰ Toggle Menu"
-toggleBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 90)
-toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 16
-toggleBtn.BorderSizePixel = 0
-toggleBtn.AutoButtonColor = true
-toggleBtn.BackgroundTransparency = 0.1
-toggleBtn.AnchorPoint = Vector2.new(0, 0)
-toggleBtn.TextXAlignment = Enum.TextXAlignment.Center
-toggleBtn.TextYAlignment = Enum.TextYAlignment.Center
-toggleBtn.ZIndex = 2
-toggleBtn.ClipsDescendants = true
-local cornerBtn = Instance.new("UICorner")
-cornerBtn.CornerRadius = UDim.new(0, 6)
-cornerBtn.Parent = toggleBtn
-
-local frame = Instance.new("Frame")
-frame.Parent = gui
-frame.Size = UDim2.new(0, 340, 0, 460)
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 300, 0, 440)
 frame.Position = UDim2.new(0, 20, 0, 100)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BorderSizePixel = 0
+frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 frame.Visible = true
 frame.Active = true
 frame.Draggable = true
 
-local corner = Instance.new("UICorner", frame)
-corner.CornerRadius = UDim.new(0, 10)
-
-local stroke = Instance.new("UIStroke", frame)
-stroke.Color = Color3.fromRGB(0, 200, 100)
-stroke.Thickness = 2
-stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-local title = Instance.new("TextLabel")
-title.Parent = frame
-title.Text = "⚙ QuanCheaterVN Menu"
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Font = Enum.Font.GothamBlack
-title.TextSize = 20
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-title.BorderSizePixel = 0
-title.TextXAlignment = Enum.TextXAlignment.Center
-
-local titleCorner = Instance.new("UICorner", title)
-titleCorner.CornerRadius = UDim.new(0, 10)
-
 toggleBtn.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
 end)
+
+local title = Instance.new("TextLabel", frame)
+title.Text = "QuanCheaterVN"
+title.Size = UDim2.new(1, 0, 0, 36)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextColor3 = Color3.new(1,1,1)
+title.BackgroundTransparency = 1
 
 local tabs = { "ESP", "Mem/S&F" }
 local tabFrames = {}
