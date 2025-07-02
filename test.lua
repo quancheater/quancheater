@@ -283,8 +283,6 @@ if espToggle() then
         end
     end
 end
-end)
-
 
 Players.PlayerRemoving:Connect(function(p)
     ESPdata[p] = nil
