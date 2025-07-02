@@ -199,15 +199,12 @@ if aimbotToggle() then
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character then
+        if p ~= LP and p.Team ~= LP.Team and p.Character then
             local hrp = p.Character:FindFirstChild("HumanoidRootPart")
             local hum = p.Character:FindFirstChild("Humanoid")
-
-            -- Bỏ qua nếu máu = 0 hoặc cùng team
-            if hrp and hum and hum.Health > 0 and (not p.Team or p.Team ~= LP.Team) then
+            if hrp and hum and hum.Health > 0 then
                 local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                 local dist = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-
                 if on and dist < FovCircle.Radius and dist < minDist then
                     closest = hrp
                     minDist = dist
@@ -226,7 +223,7 @@ if espToggle() then
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
             local hum = p.Character:FindFirstChild("Humanoid")
-            if hum and hum.Health > 0 then
+            if hum and hum.Health > 0 then -- CHỈ VẼ KHI MÁU > 0
                 if not ESPdata[p] then initESP(p) end
                 local ed = ESPdata[p]
                 local c = p.Character
@@ -248,38 +245,33 @@ if espToggle() then
                         ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
                         ed.hp.Text = "HP:" .. math.floor(hum.Health)
                         ed.hp.Visible = true
+
                         local joints = getJoints(c)
                         for i, pair in ipairs(skeletonLines) do
                             local a = joints[pair[1]]
                             local b = joints[pair[2]]
                             local sl = ed.skeleton[i]
                             if a and b then
-                                sl.From = a sl.To = b sl.Visible = true
-                            else sl.Visible = false end
+                                sl.From = a
+                                sl.To = b
+                                sl.Visible = true
+                            else
+                                sl.Visible = false
+                            end
                         end
-                    else
-                        ed.box.Visible = false ed.line.Visible = false ed.name.Visible = false ed.hp.Visible = false
-                        for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
                     end
                 end
             else
+                -- Ẩn nếu máu = 0
                 if ESPdata[p] then
                     local ed = ESPdata[p]
-                    ed.box.Visible = false ed.line.Visible = false ed.name.Visible = false ed.hp.Visible = false
+                    ed.box.Visible = false
+                    ed.line.Visible = false
+                    ed.name.Visible = false
+                    ed.hp.Visible = false
                     for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
                 end
             end
-        end
-    end
-
-    for p, ed in pairs(ESPdata) do
-        if not table.find(Players:GetPlayers(), p) then
-            ed.box:Remove()
-            ed.line:Remove()
-            ed.name:Remove()
-            ed.hp:Remove()
-            for _, sl in ipairs(ed.skeleton) do sl:Remove() end
-            ESPdata[p] = nil
         end
     end
 end
