@@ -1,8 +1,10 @@
+
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
+local Mouse = LP:GetMouse()
 
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "QuanCheaterUI"
@@ -16,7 +18,7 @@ toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 300, 0, 390)
+frame.Size = UDim2.new(0, 300, 0, 440)
 frame.Position = UDim2.new(0, 20, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.Active = true
@@ -50,9 +52,7 @@ for i, name in ipairs(tabs) do
     tabFrames[name].Position = UDim2.new(0, 10, 0, 80)
     tabFrames[name].Visible = false
     tb.MouseButton1Click:Connect(function()
-        for _, f in pairs(tabFrames) do
-            f.Visible = false
-        end
+        for _, f in pairs(tabFrames) do f.Visible = false end
         tabFrames[name].Visible = true
     end)
 end
@@ -79,6 +79,8 @@ local espToggle = addToggle(tabFrames["ESP"], "ESP Master", 10)
 local itemToggle = addToggle(tabFrames["ESP"], "Item ESP", 50)
 local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 90)
 local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
+local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
+local fovToggle = addToggle(tabFrames["ESP"], "Draw FOV", 210)
 
 local sFrame = tabFrames["Mem/S&F"]
 local speedToggle = addToggle(sFrame, "Speed Hack", 10)
@@ -86,48 +88,16 @@ local flyToggle = addToggle(sFrame, "Fly", 50)
 
 local ESPdata, Items, Mobs, ItemPick = {}, {}, {}, {}
 
-local function initESP(p)
-    local box = Drawing.new("Square")
-    box.Thickness = 1
-    box.Filled = false
-    box.Color = Color3.fromRGB(255, 0, 0)
-    local line = Drawing.new("Line")
-    line.Thickness = 1
-    line.Color = Color3.fromRGB(255, 255, 0)
-    local name = Drawing.new("Text")
-    name.Size = 13
-    name.Color = Color3.fromRGB(0, 255, 0)
-    name.Center = true
-    name.Outline = true
-    local hp = Drawing.new("Text")
-    hp.Size = 13
-    hp.Color = Color3.fromRGB(255, 255, 255)
-    hp.Center = true
-    hp.Outline = true
-    local skl = {}
-    for i = 1, 10 do
-        skl[i] = Drawing.new("Line")
-        skl[i].Color = Color3.fromRGB(0, 255, 255)
-        skl[i].Thickness = 1
-    end
-    ESPdata[p] = { box = box, line = line, name = name, hp = hp, skeleton = skl }
-end
-
 local skeletonLines = { {1,2},{2,3},{3,4},{4,5},{2,6},{6,7},{3,8},{8,9},{3,10},{10,11} }
 
 local function getJoints(c)
     local parts = {
-        c:FindFirstChild("Head"),
-        c:FindFirstChild("UpperTorso") or c:FindFirstChild("Torso"),
+        c:FindFirstChild("Head"), c:FindFirstChild("UpperTorso") or c:FindFirstChild("Torso"),
         c:FindFirstChild("LowerTorso") or c:FindFirstChild("Torso"),
-        c:FindFirstChild("LeftUpperArm"),
-        c:FindFirstChild("LeftLowerArm"),
-        c:FindFirstChild("RightUpperArm"),
-        c:FindFirstChild("RightLowerArm"),
-        c:FindFirstChild("LeftUpperLeg"),
-        c:FindFirstChild("LeftLowerLeg"),
-        c:FindFirstChild("RightUpperLeg"),
-        c:FindFirstChild("RightLowerLeg")
+        c:FindFirstChild("LeftUpperArm"), c:FindFirstChild("LeftLowerArm"),
+        c:FindFirstChild("RightUpperArm"), c:FindFirstChild("RightLowerArm"),
+        c:FindFirstChild("LeftUpperLeg"), c:FindFirstChild("LeftLowerLeg"),
+        c:FindFirstChild("RightUpperLeg"), c:FindFirstChild("RightLowerLeg")
     }
     local pos = {}
     for i, pr in ipairs(parts) do
@@ -139,12 +109,54 @@ local function getJoints(c)
     return pos
 end
 
+local function initESP(p)
+    local box = Drawing.new("Square")
+    box.Thickness = 1 box.Filled = false box.Color = Color3.fromRGB(255, 0, 0)
+    local line = Drawing.new("Line") line.Thickness = 1 line.Color = Color3.fromRGB(255, 255, 0)
+    local name = Drawing.new("Text") name.Size = 13 name.Color = Color3.fromRGB(0, 255, 0) name.Center = true name.Outline = true
+    local hp = Drawing.new("Text") hp.Size = 13 hp.Color = Color3.fromRGB(255, 255, 255) hp.Center = true hp.Outline = true
+    local skl = {} for i = 1, 10 do skl[i] = Drawing.new("Line") skl[i].Color = Color3.fromRGB(0, 255, 255) skl[i].Thickness = 1 end
+    ESPdata[p] = { box = box, line = line, name = name, hp = hp, skeleton = skl }
+end
+
+local FovCircle = Drawing.new("Circle")
+FovCircle.Color = Color3.fromRGB(0,255,0)
+FovCircle.Thickness = 1
+FovCircle.Radius = 100
+FovCircle.Filled = false
+
+local function getClosestTarget()
+    local closest, minDist = nil, math.huge
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = p.Character.HumanoidRootPart
+            local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+            local dist = (Vector2.new(sp.X, sp.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+            if onScreen and dist < minDist and dist < FovCircle.Radius then
+                closest = hrp
+                minDist = dist
+            end
+        end
+    end
+    return closest
+end
+
 RunService.RenderStepped:Connect(function()
+    FovCircle.Position = Vector2.new(Mouse.X, Mouse.Y)
+    FovCircle.Visible = fovToggle()
+
     if speedToggle() and LP.Character and LP.Character:FindFirstChild("Humanoid") then
         LP.Character.Humanoid.WalkSpeed = 200
     end
     if flyToggle() and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
         LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
+    end
+
+    if aimbotToggle() then
+        local target = getClosestTarget()
+        if target then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        end
     end
 
     if espToggle() then
@@ -178,18 +190,11 @@ RunService.RenderStepped:Connect(function()
                             local b = joints[pair[2]]
                             local sl = ed.skeleton[i]
                             if a and b then
-                                sl.From = a
-                                sl.To = b
-                                sl.Visible = true
-                            else
-                                sl.Visible = false
-                            end
+                                sl.From = a sl.To = b sl.Visible = true
+                            else sl.Visible = false end
                         end
                     else
-                        ed.box.Visible = false
-                        ed.line.Visible = false
-                        ed.name.Visible = false
-                        ed.hp.Visible = false
+                        ed.box.Visible = false ed.line.Visible = false ed.name.Visible = false ed.hp.Visible = false
                         for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
                     end
                 end
@@ -197,10 +202,7 @@ RunService.RenderStepped:Connect(function()
         end
     else
         for _, ed in pairs(ESPdata) do
-            ed.box.Visible = false
-            ed.line.Visible = false
-            ed.name.Visible = false
-            ed.hp.Visible = false
+            ed.box.Visible = false ed.line.Visible = false ed.name.Visible = false ed.hp.Visible = false
             for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
         end
     end
@@ -211,10 +213,8 @@ RunService.RenderStepped:Connect(function()
             if o:IsA("Tool") or o:IsA("Part") then
                 if not Items[o] then
                     local ii = Drawing.new("Text")
-                    ii.Size = 13
-                    ii.Color = Color3.new(1, 1, 1)
-                    ii.Center = true
-                    ii.Outline = true
+                    ii.Size = 13 ii.Color = Color3.new(1, 1, 1)
+                    ii.Center = true ii.Outline = true
                     Items[o] = ii
                 end
                 local sp, on = Camera:WorldToViewportPoint(o.Position)
@@ -231,10 +231,8 @@ RunService.RenderStepped:Connect(function()
             if o:IsA("Model") and o:FindFirstChild("Humanoid") and o ~= LP.Character then
                 if not Mobs[o] then
                     local mm = Drawing.new("Text")
-                    mm.Size = 13
-                    mm.Color = Color3.fromRGB(255, 100, 100)
-                    mm.Center = true
-                    mm.Outline = true
+                    mm.Size = 13 mm.Color = Color3.fromRGB(255, 100, 100)
+                    mm.Center = true mm.Outline = true
                     Mobs[o] = mm
                 end
                 local hrp = o:FindFirstChild("HumanoidRootPart")
@@ -254,10 +252,8 @@ RunService.RenderStepped:Connect(function()
             if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
                 if not ItemPick[o] then
                     local txt = Drawing.new("Text")
-                    txt.Size = 13
-                    txt.Color = Color3.fromRGB(0, 255, 255)
-                    txt.Center = true
-                    txt.Outline = true
+                    txt.Size = 13 txt.Color = Color3.fromRGB(0, 255, 255)
+                    txt.Center = true txt.Outline = true
                     ItemPick[o] = txt
                 end
                 local pos = o:IsA("Model") and o:FindFirstChild("PrimaryPart") or o
@@ -273,9 +269,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 Players.PlayerRemoving:Connect(function(p)
-    if ESPdata[p] then
-        ESPdata[p] = nil
-    end
+    ESPdata[p] = nil
 end)
 
 for _, v in pairs(getconnections(LP.Idled)) do v:Disable() end
