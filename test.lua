@@ -26,8 +26,9 @@ toggleBtn.TextXAlignment = Enum.TextXAlignment.Center
 toggleBtn.TextYAlignment = Enum.TextYAlignment.Center
 toggleBtn.ZIndex = 2
 toggleBtn.ClipsDescendants = true
-toggleBtn.UICorner = Instance.new("UICorner", toggleBtn)
-toggleBtn.UICorner.CornerRadius = UDim.new(0, 6)
+local cornerBtn = Instance.new("UICorner")
+cornerBtn.CornerRadius = UDim.new(0, 6)
+cornerBtn.Parent = toggleBtn
 
 local frame = Instance.new("Frame")
 frame.Parent = gui
