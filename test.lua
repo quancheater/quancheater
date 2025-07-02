@@ -3,7 +3,6 @@ local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 
 -- Create main GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
@@ -19,11 +18,6 @@ toggleBtn.TextSize = 14
 toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.BorderSizePixel = 0
-toggleBtn.ZIndex = 2
-
--- Add corner rounding
-local toggleCorner = Instance.new("UICorner", toggleBtn)
-toggleCorner.CornerRadius = UDim.new(0, 6)
 
 -- Main frame
 local frame = Instance.new("Frame", gui)
@@ -33,24 +27,12 @@ frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 frame.Active = true
 frame.Draggable = true
 frame.Visible = false
-frame.ZIndex = 2
-
--- Frame styling
-local frameCorner = Instance.new("UICorner", frame)
-frameCorner.CornerRadius = UDim.new(0, 8)
-local frameStroke = Instance.new("UIStroke", frame)
-frameStroke.Color = Color3.fromRGB(60, 60, 80)
-frameStroke.Thickness = 2
 
 -- Title bar
 local titleBar = Instance.new("Frame", frame)
 titleBar.Size = UDim2.new(1, 0, 0, 36)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
 titleBar.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-titleBar.ZIndex = 3
-
-local titleBarCorner = Instance.new("UICorner", titleBar)
-titleBarCorner.CornerRadius = UDim.new(0, 8, 0, 0)
 
 local title = Instance.new("TextLabel", titleBar)
 title.Text = "QuanCheaterVN"
@@ -61,25 +43,6 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = Color3.new(1, 1, 1)
 title.TextXAlignment = Enum.TextXAlignment.Left
-title.ZIndex = 4
-
-local closeBtn = Instance.new("TextButton", titleBar)
-closeBtn.Text = "X"
-closeBtn.Size = UDim2.new(0, 30, 1, 0)
-closeBtn.Position = UDim2.new(1, -30, 0, 0)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 16
-closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.ZIndex = 4
-closeBtn.BorderSizePixel = 0
-
-local closeCorner = Instance.new("UICorner", closeBtn)
-closeCorner.CornerRadius = UDim.new(0, 8)
-
-closeBtn.MouseButton1Click:Connect(function()
-    frame.Visible = false
-end)
 
 toggleBtn.MouseButton1Click:Connect(function() 
     frame.Visible = not frame.Visible
@@ -94,7 +57,6 @@ local tabButtons = Instance.new("Frame", frame)
 tabButtons.Size = UDim2.new(1, -20, 0, 30)
 tabButtons.Position = UDim2.new(0, 10, 0, 40)
 tabButtons.BackgroundTransparency = 1
-tabButtons.ZIndex = 3
 
 for i, name in ipairs(tabs) do
     local tb = Instance.new("TextButton", tabButtons)
@@ -106,19 +68,12 @@ for i, name in ipairs(tabs) do
     tb.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
     tb.TextColor3 = Color3.new(1, 1, 1)
     tb.BorderSizePixel = 0
-    tb.ZIndex = 4
     
-    local tbCorner = Instance.new("UICorner", tb)
-    tbCorner.CornerRadius = UDim.new(0, 6)
-    
-    tabFrames[name] = Instance.new("ScrollingFrame", frame)
+    tabFrames[name] = Instance.new("Frame", frame)
     tabFrames[name].Size = UDim2.new(1, -20, 1, -90)
     tabFrames[name].Position = UDim2.new(0, 10, 0, 80)
     tabFrames[name].Visible = false
     tabFrames[name].BackgroundTransparency = 1
-    tabFrames[name].ScrollBarThickness = 4
-    tabFrames[name].ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
-    tabFrames[name].ZIndex = 3
     
     tb.MouseButton1Click:Connect(function()
         for _, f in pairs(tabFrames) do f.Visible = false end
@@ -136,17 +91,13 @@ end
 tabFrames[tabs[1]].Visible = true
 tabButtons:GetChildren()[1].BackgroundColor3 = Color3.fromRGB(0, 120, 215)
 
--- Improved toggle function with color changes
+-- Improved toggle function
 local function addToggle(parent, name, y, default)
     local s = default or false
     local toggleFrame = Instance.new("Frame", parent)
     toggleFrame.Size = UDim2.new(1, -20, 0, 30)
     toggleFrame.Position = UDim2.new(0, 10, 0, y)
     toggleFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    toggleFrame.ZIndex = 4
-    
-    local toggleCorner = Instance.new("UICorner", toggleFrame)
-    toggleCorner.CornerRadius = UDim.new(0, 6)
     
     local toggleLabel = Instance.new("TextLabel", toggleFrame)
     toggleLabel.Text = name
@@ -157,7 +108,6 @@ local function addToggle(parent, name, y, default)
     toggleLabel.TextSize = 14
     toggleLabel.TextColor3 = Color3.new(1, 1, 1)
     toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    toggleLabel.ZIndex = 5
     
     local toggleBtn = Instance.new("TextButton", toggleFrame)
     toggleBtn.Text = s and "ON" or "OFF"
@@ -168,29 +118,11 @@ local function addToggle(parent, name, y, default)
     toggleBtn.BackgroundColor3 = s and Color3.fromRGB(0, 180, 80) or Color3.fromRGB(180, 50, 50)
     toggleBtn.TextColor3 = Color3.new(1, 1, 1)
     toggleBtn.BorderSizePixel = 0
-    toggleBtn.ZIndex = 5
-    
-    local btnCorner = Instance.new("UICorner", toggleBtn)
-    btnCorner.CornerRadius = UDim.new(0, 6)
     
     toggleBtn.MouseButton1Click:Connect(function()
         s = not s
         toggleBtn.Text = s and "ON" or "OFF"
         toggleBtn.BackgroundColor3 = s and Color3.fromRGB(0, 180, 80) or Color3.fromRGB(180, 50, 50)
-        
-        -- Add a nice animation
-        local tween = TweenService:Create(toggleBtn, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0.27, 0, 0.75, 0),
-            Position = UDim2.new(0.68, 5, 0.125, 0)
-        })
-        tween:Play()
-        tween.Completed:Connect(function()
-            local tweenBack = TweenService:Create(toggleBtn, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0.25, 0, 0.7, 0),
-                Position = UDim2.new(0.7, 5, 0.15, 0)
-            })
-            tweenBack:Play()
-        end)
     end)
     
     return function() return s end
@@ -207,13 +139,10 @@ local distanceToggle = addToggle(tabFrames["ESP"], "Show Distance", 250, true)
 local healthToggle = addToggle(tabFrames["ESP"], "Show Health", 290, true)
 
 -- Player Tab
-local teleportList = Instance.new("ScrollingFrame", tabFrames["Player"])
+local teleportList = Instance.new("Frame", tabFrames["Player"])
 teleportList.Size = UDim2.new(1, 0, 1, -40)
 teleportList.Position = UDim2.new(0, 0, 0, 0)
 teleportList.BackgroundTransparency = 1
-teleportList.ScrollBarThickness = 4
-teleportList.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
-teleportList.ZIndex = 4
 
 local teleportTitle = Instance.new("TextLabel", tabFrames["Player"])
 teleportTitle.Text = "Teleport to Player:"
@@ -224,7 +153,6 @@ teleportTitle.Font = Enum.Font.GothamBold
 teleportTitle.TextSize = 16
 teleportTitle.TextColor3 = Color3.new(1, 1, 1)
 teleportTitle.TextXAlignment = Enum.TextXAlignment.Left
-teleportTitle.ZIndex = 4
 
 local function updatePlayerList()
     for _, child in ipairs(teleportList:GetChildren()) do
@@ -245,10 +173,6 @@ local function updatePlayerList()
             playerBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
             playerBtn.TextColor3 = Color3.new(1, 1, 1)
             playerBtn.BorderSizePixel = 0
-            playerBtn.ZIndex = 5
-            
-            local btnCorner = Instance.new("UICorner", playerBtn)
-            btnCorner.CornerRadius = UDim.new(0, 6)
             
             playerBtn.MouseButton1Click:Connect(function()
                 if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and
@@ -260,14 +184,13 @@ local function updatePlayerList()
             yPos = yPos + 35
         end
     end
-    teleportList.CanvasSize = UDim2.new(0, 0, 0, yPos)
 end
 
 Players.PlayerAdded:Connect(updatePlayerList)
 Players.PlayerRemoving:Connect(updatePlayerList)
 updatePlayerList()
 
--- Mem/S&F Tab
+-- Mem/S&F Tab - KEEPING ORIGINAL SPEED AND FLY FUNCTIONS
 local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
 local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
 local noclipToggle = addToggle(tabFrames["Mem/S&F"], "Noclip", 90)
@@ -280,10 +203,6 @@ enemyCountLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 enemyCountLabel.Font = Enum.Font.Gotham
 enemyCountLabel.TextSize = 14
 enemyCountLabel.TextColor3 = Color3.new(1, 1, 1)
-enemyCountLabel.ZIndex = 4
-
-local corner = Instance.new("UICorner", enemyCountLabel)
-corner.CornerRadius = UDim.new(0, 6)
 
 -- ESP Data
 local ESPdata, PickableItems, ObjectItems, Mobs = {}, {}, {}, {}
@@ -373,11 +292,7 @@ local function getJoints(c)
     return pos
 end
 
--- Fly and Noclip functionality
-local flying = false
-local noclip = false
-local flySpeed = 50
-
+-- Infinite Jump
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed then
         if infJumpToggle() and input.KeyCode == Enum.KeyCode.Space and LP.Character and LP.Character:FindFirstChild("Humanoid") then
@@ -388,58 +303,21 @@ end)
 
 -- Main loop
 RunService.RenderStepped:Connect(function(delta)
-    -- Speed hack
+    -- ORIGINAL SPEED HACK (kept as you requested)
     if speedToggle() and LP.Character and LP.Character:FindFirstChild("Humanoid") then
-        LP.Character.Humanoid.WalkSpeed = 50
-    elseif LP.Character and LP.Character:FindFirstChild("Humanoid") then
-        LP.Character.Humanoid.WalkSpeed = 16
+        LP.Character.Humanoid.WalkSpeed = 200
     end
     
-    -- Fly hack
+    -- ORIGINAL FLY HACK (kept as you requested)
     if flyToggle() and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-        flying = true
-        local root = LP.Character.HumanoidRootPart
-        local cam = workspace.CurrentCamera.CFrame
-        
-        if UIS:IsKeyDown(Enum.KeyCode.W) then
-            root.Velocity = cam.LookVector * flySpeed
-        elseif UIS:IsKeyDown(Enum.KeyCode.S) then
-            root.Velocity = -cam.LookVector * flySpeed
-        elseif UIS:IsKeyDown(Enum.KeyCode.A) then
-            root.Velocity = -cam.RightVector * flySpeed
-        elseif UIS:IsKeyDown(Enum.KeyCode.D) then
-            root.Velocity = cam.RightVector * flySpeed
-        else
-            root.Velocity = Vector3.new(0, 0, 0)
-        end
-        
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then
-            root.Velocity = root.Velocity + Vector3.new(0, flySpeed, 0)
-        elseif UIS:IsKeyDown(Enum.KeyCode.LeftShift) then
-            root.Velocity = root.Velocity + Vector3.new(0, -flySpeed, 0)
-        end
-    elseif flying then
-        flying = false
-        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
-        end
+        LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
     end
     
     -- Noclip
     if noclipToggle() and LP.Character then
-        noclip = true
         for _, part in ipairs(LP.Character:GetDescendants()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
-            end
-        end
-    elseif noclip then
-        noclip = false
-        if LP.Character then
-            for _, part in ipairs(LP.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
             end
         end
     end
