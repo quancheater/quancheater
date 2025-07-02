@@ -95,8 +95,10 @@ end
 local espToggle = addToggle(tabFrames["ESP"], "ESP Master", 10)
 local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 90)
 local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
+local aimDistanceSlider = addSlider(tabFrames["ESP"], "Aim Distance", 10, 500, 150, 250)
 local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
 local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
+local noRecoilToggle = addToggle(tabFrames["Mem/S&F"], "No Recoil", 90)
 local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
 
 local ESPdata, Items, ItemPick = {}, {}, {}
@@ -136,7 +138,6 @@ FovCircle.Thickness = 1
 FovCircle.Radius = 100
 FovCircle.Filled = false
 
-
 RunService.RenderStepped:Connect(function()
 	local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
@@ -155,6 +156,22 @@ for obj, txt in pairs(ItemPick) do
 	end
 end
 
+	if noRecoilToggle() then
+		local cam = workspace.CurrentCamera
+		if cam and cam:FindFirstChild("RecoilScript") then
+			local recoilScript = cam:FindFirstChild("RecoilScript")
+			for _, v in pairs(recoilScript:GetChildren()) do
+				if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+					v.Value = 0
+				end
+			end
+		end
+		if cam then
+			cam.CFrame = CFrame.new(cam.CFrame.Position, cam.CFrame.Position + cam.CFrame.LookVector)
+		end
+	end
+	
+	
 if itemPickToggle() then
 	for _, o in pairs(workspace:GetDescendants()) do
 		if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
@@ -204,10 +221,10 @@ else
 	end
 end
 
-if aimbotToggle() and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+if aimbotToggle() then
 	local target = nil
 	local minDist = math.huge
-	local minHP = math.huge
+	local maxAimDistance = aimDistanceSlider() -- lấy giá trị slider
 
 	for _, p in pairs(Players:GetPlayers()) do
 		if p ~= LP and p.Team ~= LP.Team and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
@@ -215,17 +232,14 @@ if aimbotToggle() and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) 
 			local hrp = p.Character.HumanoidRootPart
 
 			if hum.Health > 0 then
-				local sp, on = Camera:WorldToViewportPoint(hrp.Position)
+				local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
 				local dir = (hrp.Position - Camera.CFrame.Position).Unit
 				local dot = dir:Dot(Camera.CFrame.LookVector)
+				local dist = (hrp.Position - Camera.CFrame.Position).Magnitude
 
-				if on and dot > 0 then
-					local dist = (Camera.CFrame.Position - hrp.Position).Magnitude
-					if dist < minDist or (math.abs(dist - minDist) <= 5 and hum.Health < minHP) then
-						target = hrp
-						minDist = dist
-						minHP = hum.Health
-					end
+				if onScreen and dot > 0 and dist < minDist and dist <= maxAimDistance then
+					target = hrp
+					minDist = dist
 				end
 			end
 		end
