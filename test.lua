@@ -271,6 +271,8 @@ end
 if espToggle() or mobToggle() then
     playerESPCount = 0
     mobESPCount = 0
+    local enemyLeft, enemyRight = false, false
+    local screenCenterX = Camera.ViewportSize.X / 2
 
     for ent, ed in pairs(ESPdata) do
         ed.box.Visible = false
@@ -286,14 +288,18 @@ if espToggle() or mobToggle() then
             local hrp = p.Character.HumanoidRootPart
             local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
             if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
-                for _, part in pairs(p.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part:GetPropertyChangedSignal("Position"):Connect(function() end)
-                    end
-                end
                 local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                 local dir = (hrp.Position - Camera.CFrame.Position).Unit
                 local dot = dir:Dot(Camera.CFrame.LookVector)
+
+                if not on then
+                    if sp.X < screenCenterX then
+                        enemyLeft = true
+                    else
+                        enemyRight = true
+                    end
+                end
+
                 if espToggle() and on and dot > 0 then
                     if not ESPdata[p] then initESP(p) end
                     local ed = ESPdata[p]
@@ -335,14 +341,18 @@ if espToggle() or mobToggle() then
             local hrp = mob.HumanoidRootPart
             local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
             if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
-                for _, part in pairs(mob:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part:GetPropertyChangedSignal("Position"):Connect(function() end)
-                    end
-                end
                 local sp, on = Camera:WorldToViewportPoint(hrp.Position)
                 local dir = (hrp.Position - Camera.CFrame.Position).Unit
                 local dot = dir:Dot(Camera.CFrame.LookVector)
+
+                if not on then
+                    if sp.X < screenCenterX then
+                        enemyLeft = true
+                    else
+                        enemyRight = true
+                    end
+                end
+
                 if mobToggle() and on and dot > 0 then
                     if not ESPdata[mob] then initESP(mob) end
                     local ed = ESPdata[mob]
@@ -368,11 +378,33 @@ if espToggle() or mobToggle() then
     end
 
     counter.Text = "ESP: " .. tostring(playerESPCount) .. " | MOB: " .. tostring(mobESPCount)
+    counter.Position = UDim2.new(0.5, -100, 0, 0)
+    counter.TextSize = 20
+    counter.TextColor3 = Color3.new(1, 1, 0)
     counter.Visible = true
+
+    if enemyLeft then
+        local leftWarn = Drawing.new("Circle")
+        leftWarn.Position = Vector2.new(25, Camera.ViewportSize.Y / 2)
+        leftWarn.Radius = 10
+        leftWarn.Filled = true
+        leftWarn.Color = Color3.new(1, 0, 0)
+        leftWarn.Visible = true
+        task.delay(0.1, function() leftWarn:Remove() end)
+    end
+
+    if enemyRight then
+        local rightWarn = Drawing.new("Circle")
+        rightWarn.Position = Vector2.new(Camera.ViewportSize.X - 25, Camera.ViewportSize.Y / 2)
+        rightWarn.Radius = 10
+        rightWarn.Filled = true
+        rightWarn.Color = Color3.new(0, 1, 0)
+        rightWarn.Visible = true
+        task.delay(0.1, function() rightWarn:Remove() end)
+    end
 else
     counter.Visible = false
 end
-
 end)
 
 Players.PlayerRemoving:Connect(function(p)
