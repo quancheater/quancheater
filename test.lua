@@ -220,23 +220,28 @@ end
 		end
 	end
 
-  if aimbotToggle() then
+if aimbotToggle() then
     local target, minDist = nil, math.huge
-    local maxAimDistance = 150 -- Khoảng cách cố định aim tối đa
+    local maxAimDistance = 150 
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Team ~= LP.Team and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = p.Character.HumanoidRootPart
-            local distance3D = (hrp.Position - Camera.CFrame.Position).Magnitude
-            if distance3D <= maxAimDistance then -- chỉ xét mục tiêu trong 150 studs
-                local sp, on = Camera:WorldToViewportPoint(hrp.Position)
-                local dir = (hrp.Position - Camera.CFrame.Position).Unit
-                local dot = dir:Dot(Camera.CFrame.LookVector)
-                local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-                if on and dot > 0 and dist2D < minDist then
-                    target = hrp
-                    minDist = dist2D
+        if p ~= LP and p.Team ~= LP.Team and p.Character then
+            local head = p.Character:FindFirstChild("Head")
+            local hum = p.Character:FindFirstChild("Humanoid")
+
+            if head and hum and hum.Health > 0 then
+                local distance3D = (head.Position - Camera.CFrame.Position).Magnitude
+                if distance3D <= maxAimDistance then 
+                    local sp, on = Camera:WorldToViewportPoint(head.Position)
+                    local dir = (head.Position - Camera.CFrame.Position).Unit
+                    local dot = dir:Dot(Camera.CFrame.LookVector)
+                    local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+
+                    if on and dot > 0 and dist2D < minDist then
+                        target = head
+                        minDist = dist2D
+                    end
                 end
             end
         end
