@@ -305,8 +305,8 @@ end
 if aimbotToggle() then
     local target = nil
     local closestDist = math.huge
-    local maxDist = 150
-    local fov = 180
+    local maxDist = 200
+    local fov = 360
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     local function IsVisible(part)
@@ -343,16 +343,16 @@ if aimbotToggle() then
 
     if target then
         local camPos = Camera.CFrame.Position
-        local targetPos = target.Position
-        local currentDir = Camera.CFrame.LookVector
-        local desiredDir = (targetPos - camPos).Unit
-        local dot = currentDir:Dot(desiredDir)
+        local headPos = target.Position
+        Camera.CFrame = CFrame.new(camPos, headPos)
 
-        if dot < 0.999 then
-            local fixedDir = currentDir:Lerp(desiredDir, 0.75)
-            Camera.CFrame = CFrame.new(camPos, camPos + fixedDir)
-        else
-            Camera.CFrame = CFrame.new(camPos, targetPos)
+        local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
+        if recoil then
+            for _, v in ipairs(recoil:GetChildren()) do
+                if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                    v.Value = 0
+                end
+            end
         end
     end
 end
