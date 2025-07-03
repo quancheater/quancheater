@@ -109,7 +109,6 @@ local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 50)
 local noRecoilToggle = addToggle(tabFrames["ESP"], "No Recoil", 90)
 local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
 local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
-local itemEspToggle = addToggle(tabFrames["ESP"], "item esp obj", 210)
 local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
 local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
 
@@ -186,57 +185,6 @@ for obj, txt in pairs(ItemPick) do
 		txt:Remove()
 		ItemPick[obj] = nil
 	end
-end
-
-if itemEspToggle() then
-    if not ItemESP then ItemESP = {} end
-
-    for obj, text in pairs(ItemESP) do
-        if not obj or not obj.Parent then
-            if text and text.Remove then
-                text:Remove()
-            end
-            ItemESP[obj] = nil
-        end
-    end
-
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Name ~= "" and obj.Transparency < 1 then
-            if not obj:IsDescendantOf(LP.Character) and not obj:IsDescendantOf(workspace.Ignore) then
-                local distance = (obj.Position - Camera.CFrame.Position).Magnitude
-                if distance <= maxESPDistance then
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(obj.Position)
-                    if onScreen then
-                        if not ItemESP[obj] then
-                            local text = Drawing.new("Text")
-                            text.Size = 16
-                            text.Center = true
-                            text.Outline = true
-                            text.Color = Color3.fromRGB(255, 255, 0)
-                            ItemESP[obj] = text
-                        end
-                        local text = ItemESP[obj]
-                        text.Text = obj.Name .. " [" .. math.floor(distance) .. "m]"
-                        text.Position = Vector2.new(screenPos.X, screenPos.Y)
-                        text.Visible = true
-                    elseif ItemESP[obj] then
-                        ItemESP[obj].Visible = false
-                    end
-                elseif ItemESP[obj] then
-                    ItemESP[obj].Visible = false
-                end
-            end
-        end
-    end
-else
-    if ItemESP then
-        for obj, text in pairs(ItemESP) do
-            if text and text.Remove then
-                text:Remove()
-            end
-        end
-        ItemESP = {}
-    end
 end
 
 if itemPickToggle() then
