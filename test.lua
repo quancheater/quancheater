@@ -273,8 +273,8 @@ end
 if aimbotToggle() then
     local target = nil
     local closest3D = math.huge
-    local maxDist = 200
-    local fov = 60
+    local maxDist = 150
+    local fov = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, p in pairs(Players:GetPlayers()) do
@@ -289,7 +289,6 @@ if aimbotToggle() then
                     local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
                     local dir = (pos3D - Camera.CFrame.Position).Unit
                     local dot = dir:Dot(Camera.CFrame.LookVector)
-
                     if onScreen and dot > 0 and dist2D <= fov then
                         if dist3D < closest3D then
                             target = head
@@ -307,15 +306,14 @@ if aimbotToggle() then
 end
 
 pcall(function()
-    local scripts = {
+    local list = {
         LP.PlayerScripts:FindFirstChild("GunRecoil"),
         LP.PlayerScripts:FindFirstChild("Recoil"),
         LP.PlayerScripts:FindFirstChild("CameraShake"),
-        LP.Character and LP.Character:FindFirstChild("CameraShakeScript"),
-        LP.Character and LP.Character:FindFirstChild("RecoilScript")
+        LP.Character and LP.Character:FindFirstChild("Recoil"),
+        LP.Character and LP.Character:FindFirstChild("CameraShakeScript")
     }
-
-    for _, s in ipairs(scripts) do
+    for _, s in ipairs(list) do
         if s then
             if s:IsA("ModuleScript") then
                 local m = require(s)
