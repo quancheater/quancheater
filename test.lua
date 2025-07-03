@@ -434,45 +434,39 @@ if espToggle() or mobToggle() then
     end
 
     local function handleESP(target, isPlayer)
-        local hum = target.Humanoid
-        local hrp = target.HumanoidRootPart
+        local hum = target:FindFirstChild("Humanoid")
+        local hrp = target:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp then return end
         local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
         if distance > maxESPDistance or hum.Health <= 0 or hum.Health == math.huge then return end
 
         local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
         local dir = (hrp.Position - Camera.CFrame.Position).Unit
         local dot = dir:Dot(Camera.CFrame.LookVector)
-
         local toggleCheck = isPlayer and espToggle() or mobToggle()
         if toggleCheck and onScreen and dot > 0 then
             if not ESPdata[target] then initESP(target) end
             local ed = ESPdata[target]
             local visible = IsVisible(hrp)
             local color = visible and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-
             local sy = math.clamp(2000 / distance, 30, 200)
             local sx = sy / 2
-
             ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
             ed.box.Size = Vector2.new(sx, sy)
             ed.box.Color = color
             ed.box.Visible = true
-
             ed.line.From = topCenter
             ed.line.To = Vector2.new(sp.X, sp.Y)
             ed.line.Color = color
             ed.line.Visible = true
-
             ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
             ed.name.Text = target.Name
             ed.name.Color = color
             ed.name.Visible = true
-
             ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
             ed.hp.Text = "HP: " .. math.floor(hum.Health)
             ed.hp.Color = color
             ed.hp.Visible = true
-
             if not ed.dist then
                 ed.dist = Drawing.new("Text")
                 ed.dist.Size = 17
@@ -483,7 +477,6 @@ if espToggle() or mobToggle() then
             ed.dist.Position = Vector2.new(sp.X, sp.Y + sy / 2 + 10)
             ed.dist.Text = math.floor(distance) .. "m"
             ed.dist.Visible = true
-
             if isPlayer then
                 local joints = getJoints(target)
                 for i, pair in ipairs(skeletonLines) do
@@ -509,16 +502,48 @@ if espToggle() or mobToggle() then
     end
 
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
-            if not (p.Team and LP.Team and p.Team == LP.Team) then
-                handleESP(p.Character, true)
-            end
+        if p ~= LP and p.Character then
+            handleESP(p.Character, true)
         end
     end
 
     for _, mob in pairs(workspace:GetDescendants()) do
-        if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
+        if mob:IsA("Model") and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") then
             handleESP(mob, false)
+        end
+    end
+
+    for _, box in ipairs(workspace:GetDescendants()) do
+        if box:IsA("MeshPart") and box.Name == "AmmoBox2" then
+            local dist = (box.Position - Camera.CFrame.Position).Magnitude
+            if dist <= maxESPDistance then
+                local sp, onScreen = Camera:WorldToViewportPoint(box.Position)
+                if onScreen then
+                    if not ESPdata[box] then
+                        ESPdata[box] = {
+                            name = Drawing.new("Text"),
+                            dist = Drawing.new("Text")
+                        }
+                        ESPdata[box].name.Size = 17
+                        ESPdata[box].name.Center = true
+                        ESPdata[box].name.Outline = true
+                        ESPdata[box].name.Color = Color3.fromRGB(0, 170, 255)
+
+                        ESPdata[box].dist.Size = 15
+                        ESPdata[box].dist.Center = true
+                        ESPdata[box].dist.Outline = true
+                        ESPdata[box].dist.Color = Color3.new(1, 1, 1)
+                    end
+
+                    local ed = ESPdata[box]
+                    ed.name.Position = Vector2.new(sp.X, sp.Y - 20)
+                    ed.name.Text = "[ Hòm đạn ]"
+                    ed.name.Visible = true
+                    ed.dist.Position = Vector2.new(sp.X, sp.Y)
+                    ed.dist.Text = math.floor(dist) .. "m"
+                    ed.dist.Visible = true
+                end
+            end
         end
     end
 
