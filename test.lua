@@ -303,7 +303,7 @@ end
 
 
 if aimbotToggle() then
-    local target, closestDist = nil, math.huge
+    local target, closestDist, lowestHP = nil, math.huge, math.huge
     local maxDist, fov = 150, 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
@@ -329,9 +329,10 @@ if aimbotToggle() then
                     local dir = (head.Position - Camera.CFrame.Position).Unit
                     local dot = dir:Dot(Camera.CFrame.LookVector)
                     if onScreen and dot > 0 and dist2D <= fov then
-                        if dist3D < closestDist then
+                        if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and hum.Health < lowestHP) then
                             target = head
                             closestDist = dist3D
+                            lowestHP = hum.Health
                         end
                     end
                 end
@@ -341,6 +342,7 @@ if aimbotToggle() then
 
     if target then
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+
         local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
         if recoil then
             for _, v in ipairs(recoil:GetChildren()) do
@@ -349,6 +351,7 @@ if aimbotToggle() then
                 end
             end
         end
+
         pcall(function()
             for _, s in ipairs({
                 LP.PlayerScripts:FindFirstChild("GunRecoil"),
@@ -369,34 +372,6 @@ if aimbotToggle() then
                 end
             end
         end)
-
-        local args = {
-            CFrame.new(Camera.CFrame.Position, target.Position),
-            6,
-            1,
-            1,
-            tick(),
-            {
-                {
-                    instance = target,
-                    finalPosition = target.Position,
-                    normal = Vector3.new(0, 1, 0),
-                    bulletDirection = (target.Position - Camera.CFrame.Position).Unit
-                }
-            },
-            tick(),
-            Rect.new(Vector2.new(-1, -1), Vector2.new(1, 1)),
-            {
-                {
-                    position = target.Position
-                }
-            },
-            ReplicatedStorage:WaitForChild("Weapons"):FindFirstChildOfClass("Folder"):FindFirstChild("Sounds"):FindFirstChild("Shoot"),
-            ReplicatedStorage:WaitForChild("Weapons"):FindFirstChildOfClass("Folder"):FindFirstChild("Fxs"):FindFirstChild("MuzzleFlash_3p"),
-            LP.Character:WaitForChild("CurrentWeaponAccessoryRightHand"):WaitForChild("Handle"):WaitForChild("muzzle"):WaitForChild("Attachment")
-        }
-
-        ReplicatedStorage:WaitForChild("Function"):WaitForChild("Gameplay"):WaitForChild("Shoot"):InvokeServer(unpack(args))
     end
 end
 
