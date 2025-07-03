@@ -238,28 +238,35 @@ else
 end
 
 if noRecoilToggle() then
-    for _, mod in ipairs(game:GetDescendants()) do
-        if mod:IsA("ModuleScript") then
-            local lname = mod.Name:lower()
+	local cam = workspace.CurrentCamera
+	if cam and cam:FindFirstChild("RecoilScript") then
+		for _, v in ipairs(cam.RecoilScript:GetChildren()) do
+			if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+				v.Value = 0
+			end
+		end
+	end
 
-            if lname:find("recoil") or lname:find("weapon") or lname:find("gun") then
-                local success, recoilModule = pcall(require, mod)
-                if success and typeof(recoilModule) == "table" then
-                    for k, v in pairs(recoilModule) do
-                        if typeof(v) == "function" and tostring(k):lower():find("recoil") then
-                            recoilModule[k] = function(...) return end
-                        elseif typeof(v) == "table" then
-                            for k2, v2 in pairs(v) do
-                                if typeof(v2) == "function" and tostring(k2):lower():find("recoil") then
-                                    v[k2] = function(...) return end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
+	for _, tool in ipairs(LP.Backpack:GetChildren()) do
+		if tool:IsA("Tool") and tool:FindFirstChild("Recoil") then
+			for _, obj in ipairs(tool:GetDescendants()) do
+				if obj:IsA("NumberValue") or obj:IsA("Vector3Value") then
+					obj.Value = 0
+				end
+			end
+		end
+	end
+
+	local char = LP.Character
+	if char then
+		for _, obj in ipairs(char:GetDescendants()) do
+			if obj:IsA("NumberValue") or obj:IsA("Vector3Value") then
+				if obj.Name:lower():find("recoil") then
+					obj.Value = 0
+				end
+			end
+		end
+	end
 end
 
 
