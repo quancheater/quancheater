@@ -2,7 +2,6 @@
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
 
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "QuanCheaterUI"
@@ -15,6 +14,7 @@ toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 170, 90)
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.TextSize = 14
+toggleBtn.BorderSizePixel = 0
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 320, 0, 460)
@@ -36,6 +36,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 20
 title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundTransparency = 1
+title.Position = UDim2.new(0, 0, 0, 0)
 
 local tabs = { "ESP", "Mem/S&F" }
 local tabFrames = {}
@@ -49,16 +50,20 @@ for i, name in ipairs(tabs) do
 	tabBtn.TextSize = 14
 	tabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 	tabBtn.TextColor3 = Color3.new(1, 1, 1)
+	tabBtn.BorderSizePixel = 0
 
-	tabFrames[name] = Instance.new("Frame", frame)
-	tabFrames[name].Size = UDim2.new(1, -20, 1, -80)
-	tabFrames[name].Position = UDim2.new(0, 10, 0, 80)
-	tabFrames[name].Visible = false
-	tabFrames[name].BackgroundTransparency = 1
+	local tabFrame = Instance.new("Frame", frame)
+	tabFrame.Size = UDim2.new(1, -20, 1, -80)
+	tabFrame.Position = UDim2.new(0, 10, 0, 80)
+	tabFrame.Visible = false
+	tabFrame.BackgroundTransparency = 1
+	tabFrame.Name = name
+
+	tabFrames[name] = tabFrame
 
 	tabBtn.MouseButton1Click:Connect(function()
 		for _, f in pairs(tabFrames) do f.Visible = false end
-		tabFrames[name].Visible = true
+		tabFrame.Visible = true
 	end)
 end
 
@@ -82,6 +87,7 @@ local function addToggle(parent, name, order)
 		btn.Text = name .. ": " .. (state and "ON" or "OFF")
 	end)
 
+	btn.Parent = parent
 	return function() return state end
 end
 
