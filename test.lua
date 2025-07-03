@@ -338,17 +338,16 @@ if espToggle() or mobToggle() then
                         local a, b = joints[pair[1]], joints[pair[2]]
                         local sl = ed.skeleton[i]
                         if a and b then
-                            local a2d, aOn = Camera:WorldToViewportPoint(a)
-                            local b2d, bOn = Camera:WorldToViewportPoint(b)
-                            sl.From = Vector2.new(a2d.X, a2d.Y)
-                            sl.To = Vector2.new(b2d.X, b2d.Y)
-                            sl.Visible = aOn and bOn
+                            sl.From = a
+                            sl.To = b
+                            sl.Visible = true
                         else
                             sl.Visible = false
                         end
                     end
                     playerESPCount += 1
                 else
+                    local dir = (hrp.Position - Camera.CFrame.Position).Unit
                     local angle = math.atan2(dir.Z, dir.X)
                     local rounded = math.floor(angle * 10) / 10
                     alertMap[rounded] = true
@@ -358,7 +357,7 @@ if espToggle() or mobToggle() then
     end
 
     for _, mob in pairs(workspace:GetDescendants()) do
-        if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(mob) then
+        if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
             local hum = mob.Humanoid
             local hrp = mob.HumanoidRootPart
             local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
@@ -393,6 +392,7 @@ if espToggle() or mobToggle() then
                     for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
                     mobESPCount += 1
                 else
+                    local dir = (hrp.Position - Camera.CFrame.Position).Unit
                     local angle = math.atan2(dir.Z, dir.X)
                     local rounded = math.floor(angle * 10) / 10
                     alertMap[rounded] = true
@@ -401,9 +401,23 @@ if espToggle() or mobToggle() then
         end
     end
 
-    
+    if not counter then
+        counter = Instance.new("TextLabel")
+        counter.Size = UDim2.new(0, 300, 0, 32)
+        counter.AnchorPoint = Vector2.new(0.5, 0)
+        counter.Position = UDim2.new(0.5, 0, 0, 22)
+        counter.BackgroundTransparency = 1
+        counter.TextColor3 = Color3.fromRGB(255, 255, 0)
+        counter.TextStrokeColor3 = Color3.new(0, 0, 0)
+        counter.TextStrokeTransparency = 0.3
+        counter.Font = Enum.Font.GothamBold
+        counter.TextSize = 22
+        counter.Name = "ESPCount"
+        counter.ZIndex = 9999
+        counter.Parent = game.CoreGui
+    end
+
     counter.Text = "ESP: " .. tostring(playerESPCount) .. " | MOB: " .. tostring(mobESPCount)
-    counter.Position = Vector2.new(Camera.ViewportSize.X / 2, 20)
     counter.Visible = true
 
     for angle, _ in pairs(alertMap) do
@@ -417,8 +431,9 @@ if espToggle() or mobToggle() then
         task.delay(0.3, function() dot:Remove() end)
     end
 else
-    counter.Visible = false
+    if counter then counter.Visible = false end
 end
+end)
 
 Players.PlayerRemoving:Connect(function(p)
 	if ESPdata[p] then
