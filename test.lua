@@ -272,7 +272,7 @@ end
 
 if aimbotToggle() then
     local target = nil
-    local closestDist2D = math.huge
+    local closest3D = math.huge
     local maxDist = 180
     local fov = 120
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -282,16 +282,18 @@ if aimbotToggle() then
             local head = p.Character:FindFirstChild("Head")
             local hum = p.Character:FindFirstChild("Humanoid")
             if head and hum and hum.Health > 0 then
-                local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
+                local pos3D = head.Position
+                local dist3D = (pos3D - Camera.CFrame.Position).Magnitude
                 if dist3D <= maxDist then
-                    local sp, onScreen = Camera:WorldToViewportPoint(head.Position)
-                    local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-                    local dir = (head.Position - Camera.CFrame.Position).Unit
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(pos3D)
+                    local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    local dir = (pos3D - Camera.CFrame.Position).Unit
                     local dot = dir:Dot(Camera.CFrame.LookVector)
+
                     if onScreen and dot > 0 and dist2D <= fov then
-                        if dist2D < closestDist2D then
+                        if dist3D < closest3D then
                             target = head
-                            closestDist2D = dist2D
+                            closest3D = dist3D
                         end
                     end
                 end
