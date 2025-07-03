@@ -303,8 +303,8 @@ end
 
 
 if aimbotToggle() then
-    local target, closestDist = nil, math.huge
-    local maxDist, fov, predictTime = 150, 180, 0.12
+    local target, closestDist, lowestHP = nil, math.huge, math.huge
+    local maxDist, fov, predictTime = 150, 180, 0.14
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     local function IsVisible(part)
@@ -323,16 +323,17 @@ if aimbotToggle() then
             local r = p.Character:FindFirstChild("HumanoidRootPart")
             local u = p.Character:FindFirstChild("Humanoid")
             if h and r and u and u.Health > 0 and IsVisible(h) then
-                local pred = h.Position + r.Velocity * predictTime
-                local dist3D = (pred - Camera.CFrame.Position).Magnitude
+                local predicted = h.Position + r.Velocity * predictTime
+                local dist3D = (predicted - Camera.CFrame.Position).Magnitude
                 if dist3D <= maxDist then
-                    local sp, on = Camera:WorldToViewportPoint(pred)
+                    local sp, on = Camera:WorldToViewportPoint(predicted)
                     local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-                    local dot = (pred - Camera.CFrame.Position).Unit:Dot(Camera.CFrame.LookVector)
+                    local dot = (predicted - Camera.CFrame.Position).Unit:Dot(Camera.CFrame.LookVector)
                     if on and dot > 0 and dist2D <= fov then
-                        if dist3D < closestDist then
-                            target = pred
+                        if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and u.Health < lowestHP) then
+                            target = predicted
                             closestDist = dist3D
+                            lowestHP = u.Health
                         end
                     end
                 end
@@ -341,20 +342,12 @@ if aimbotToggle() then
     end
 
     if target then
-        local args = {
-            CFrame.new(target),
-            6, 1, 1, tick(), {}, tick(),
-            Rect.new(Vector2.new(-1, -1), Vector2.new(1, 1)),
-            {{position = target}},
-            game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):WaitForChild("06_Garand"):WaitForChild("Sounds"):WaitForChild("Shoot"),
-            game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):WaitForChild("06_Garand"):WaitForChild("Fxs"):WaitForChild("MuzzleFlash_3p"),
-            LP.Character:WaitForChild("CurrentWeaponAccessoryRightHand"):WaitForChild("Handle"):WaitForChild("muzzle"):WaitForChild("Attachment")
-        }
-        game:GetService("ReplicatedStorage"):WaitForChild("Function"):WaitForChild("Gameplay"):WaitForChild("Shoot"):InvokeServer(unpack(args))
+        local camPos = Camera.CFrame.Position
+        Camera.CFrame = CFrame.new(camPos, target)
 
-        local r = workspace.CurrentCamera:FindFirstChild("RecoilScript")
-        if r then
-            for _, v in ipairs(r:GetChildren()) do
+        local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
+        if recoil then
+            for _, v in ipairs(recoil:GetChildren()) do
                 if v:IsA("NumberValue") or v:IsA("Vector3Value") then v.Value = 0 end
             end
         end
