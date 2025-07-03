@@ -273,8 +273,8 @@ end
 if aimbotToggle() then
     local target = nil
     local closest3D = math.huge
-    local maxDist = 180
-    local fov = 120
+    local maxDist = 200
+    local fov = 60
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, p in pairs(Players:GetPlayers()) do
