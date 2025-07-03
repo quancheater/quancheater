@@ -272,9 +272,7 @@ end
 
 if aimbotToggle() then
     local target = nil
-    local minHealth = math.huge
-    local minDist = math.huge
-    local maxDist = 150
+    local maxDist = 180
     local fov = 120
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
@@ -290,11 +288,8 @@ if aimbotToggle() then
                     local dir = (head.Position - Camera.CFrame.Position).Unit
                     local dot = dir:Dot(Camera.CFrame.LookVector)
                     if onScreen and dot > 0 and dist2D <= fov then
-                        if hum.Health < minHealth or (hum.Health == minHealth and dist2D < minDist) then
-                            target = head
-                            minHealth = hum.Health
-                            minDist = dist2D
-                        end
+                        target = head
+                        break
                     end
                 end
             end
@@ -303,6 +298,15 @@ if aimbotToggle() then
 
     if target then
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        local line = Drawing.new("Line")
+        local screenPos = Camera:WorldToViewportPoint(target.Position)
+        line.From = center
+        line.To = Vector2.new(screenPos.X, screenPos.Y)
+        line.Color = Color3.fromRGB(255, 0, 0)
+        line.Thickness = 2
+        line.Transparency = 1
+        line.ZIndex = 2
+        task.delay(0.03, function() line:Remove() end)
     end
 end
 
