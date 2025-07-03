@@ -181,68 +181,73 @@ RunService.RenderStepped:Connect(function()
 	end
 
 local UIS = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
-local ItemPick = {}
-local pickedItems = {}
 local dragging = false
-local lastRefresh = 0
+local maxDistance = 60
 
 UIS.InputBegan:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+	if i.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+	end
 end)
+
 UIS.InputEnded:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+	if i.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
 end)
 
-RunService.RenderStepped:Connect(function(deltaTime)
+RunService.RenderStepped:Connect(function()
+	if itemPickToggle() then
+		local mousePos = UIS:GetMouseLocation()
+		local current = {}
 
-if itemPickToggle() then
-	local mousePos = UIS:GetMouseLocation()
-	local current = {}
+		for _, o in ipairs(workspace:GetDescendants()) do
+			if (o:IsA("BasePart") or o:IsA("Model")) then
+				local hasPrompt = o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")
+				if hasPrompt then
+					local pos = o:IsA("Model") and (o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position) or o.Position
+					local dist = (Camera.CFrame.Position - pos).Magnitude
+					if dist <= maxDistance then
+						local screen, onScreen = Camera:WorldToViewportPoint(pos)
+						if not ItemPick[o] then
+							local txt = Drawing.new("Text")
+							txt.Size = 13
+							txt.Color = Color3.fromRGB(0, 255, 255)
+							txt.Center = true
+							txt.Outline = true
+							ItemPick[o] = txt
+						end
 
-	for _, o in ipairs(workspace:GetDescendants()) do
-		if (o:IsA("BasePart") or o:IsA("Model")) then
-			local hasPrompt = o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")
-			if hasPrompt then
-				local pos = o:IsA("Model") and (o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position) or o.Position
-				local dist = (Camera.CFrame.Position - pos).Magnitude
-				if dist <= maxDistance then
-					local screen, onScreen = Camera:WorldToViewportPoint(pos)
-					if not ItemPick[o] then
-						local txt = Drawing.new("Text")
-						txt.Size = 13
-						txt.Color = Color3.fromRGB(0, 255, 255)
-						txt.Center = true
-						txt.Outline = true
-						ItemPick[o] = txt
-					end
+						local draw = ItemPick[o]
+						draw.Position = Vector2.new(screen.X, screen.Y)
+						draw.Text = "[Pick] " .. o.Name
+						draw.Visible = onScreen
+						current[o] = true
 
-					local draw = ItemPick[o]
-					draw.Position = Vector2.new(screen.X, screen.Y)
-					draw.Text = "[Pick] " .. o.Name
-					draw.Visible = onScreen
-					current[o] = true
-
-					if dragging and onScreen and (Vector2.new(screen.X, screen.Y) - mousePos).Magnitude < 25 then
-						local id = o:GetDebugId()
-						if not pickedItems[id] then
-							pickedItems[id] = true
-							appendfile("ItemsStored.txt", o:GetFullName() .. "\n")
+						if dragging and onScreen and (Vector2.new(screen.X, screen.Y) - mousePos).Magnitude < 25 then
+							local id = o:GetDebugId()
+							if not pickedItems[id] then
+								pickedItems[id] = true
+								appendfile("ItemsStored.txt", o:GetFullName() .. "\n")
+							end
 						end
 					end
 				end
 			end
 		end
-	end
 
-	for obj, txt in pairs(ItemPick) do
-		if not current[obj] then
-			if txt.Remove then txt:Remove() end
-			ItemPick[obj] = nil
+		for obj, txt in pairs(ItemPick) do
+			if not current[obj] then
+				if txt.Remove then txt:Remove() end
+				ItemPick[obj] = nil
+			end
 		end
+	else
+		for _, txt in pairs(ItemPick) do
+			if txt.Remove then txt:Remove() end
+		end
+		ItemPick = {}
 	end
-end
 end)
 
 local function IsVisible(part)
