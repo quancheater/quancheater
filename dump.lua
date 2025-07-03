@@ -27,7 +27,7 @@ frame.Draggable = true
 local searchBox = Instance.new("TextBox", frame)
 searchBox.Size = UDim2.new(1, -10, 0, 30)
 searchBox.Position = UDim2.new(0, 5, 0, 5)
-searchBox.PlaceholderText = "Tìm tên hàm..."
+searchBox.PlaceholderText = "Tìm từ khóa object..."
 searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 searchBox.TextColor3 = Color3.new(1, 1, 1)
 searchBox.TextSize = 14
@@ -56,87 +56,97 @@ saveBtn.TextSize = 13
 local functionTable = {}
 local edited = {}
 
--- fake function list demo
-for i = 1, 50 do
-	functionTable["Function_" .. i] = {
-		Obj = workspace:FindFirstChildWhichIsA("Part", true),
-		Reset = function()
-			print("Reset:", i)
-		end
-	}
+-- 🧠 Tạo danh sách các hàm/object từ toàn bộ game
+for _, obj in pairs(game:GetDescendants()) do
+    local id = obj:GetFullName()
+    if obj:IsA("BasePart") or obj:IsA("Model") then
+        functionTable[id] = {
+            Obj = obj,
+            Reset = function()
+                if obj:IsA("BasePart") then
+                    obj.Material = Enum.Material.Plastic
+                    obj.Color = Color3.new(1, 1, 1)
+                    obj.Transparency = 0
+                end
+            end
+        }
+    end
 end
 
+-- 🧠 Giao diện
 local function updateTable()
-	for _, child in pairs(scroll:GetChildren()) do
-		if child:IsA("Frame") then child:Destroy() end
-	end
+    for _, child in pairs(scroll:GetChildren()) do
+        if child:IsA("Frame") then child:Destroy() end
+    end
 
-	for name, data in pairs(functionTable) do
-		if searchBox.Text == "" or string.find(name:lower(), searchBox.Text:lower()) then
-			local row = Instance.new("Frame")
-			row.Size = UDim2.new(1, 0, 0, 30)
-			row.BackgroundTransparency = 1
+    for name, data in pairs(functionTable) do
+        if searchBox.Text == "" or string.find(name:lower(), searchBox.Text:lower()) then
+            local row = Instance.new("Frame")
+            row.Size = UDim2.new(1, 0, 0, 30)
+            row.BackgroundTransparency = 1
 
-			local label = Instance.new("TextLabel", row)
-			label.Text = name
-			label.Size = UDim2.new(0.75, 0, 1, 0)
-			label.BackgroundTransparency = 1
-			label.TextColor3 = Color3.new(1, 1, 1)
-			label.TextXAlignment = Enum.TextXAlignment.Left
-			label.Font = Enum.Font.Gotham
-			label.TextSize = 14
+            local label = Instance.new("TextLabel", row)
+            label.Text = name
+            label.Size = UDim2.new(0.8, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.TextColor3 = Color3.new(1, 1, 1)
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Font = Enum.Font.Gotham
+            label.TextSize = 13
 
-			local resetBtn = Instance.new("TextButton", row)
-			resetBtn.Text = "Reset"
-			resetBtn.Size = UDim2.new(0, 60, 0, 25)
-			resetBtn.Position = UDim2.new(1, -70, 0.5, -12)
-			resetBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-			resetBtn.TextColor3 = Color3.new(1, 1, 1)
-			resetBtn.Font = Enum.Font.GothamBold
-			resetBtn.TextSize = 13
+            local resetBtn = Instance.new("TextButton", row)
+            resetBtn.Text = "Reset"
+            resetBtn.Size = UDim2.new(0, 60, 0, 25)
+            resetBtn.Position = UDim2.new(1, -70, 0.5, -12)
+            resetBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+            resetBtn.TextColor3 = Color3.new(1, 1, 1)
+            resetBtn.Font = Enum.Font.GothamBold
+            resetBtn.TextSize = 13
 
-			resetBtn.MouseButton1Click:Connect(function()
-				if data.Reset then data.Reset() end
-				edited[name] = nil
-				if data.Obj and data.Obj:IsA("BasePart") then
-					data.Obj.Material = Enum.Material.Plastic
-					data.Obj.Color = Color3.fromRGB(255, 255, 255)
-				end
-			end)
+            resetBtn.MouseButton1Click:Connect(function()
+                if data.Reset then data.Reset() end
+                edited[name] = nil
+                if data.Obj and data.Obj:IsA("BasePart") then
+                    data.Obj.Material = Enum.Material.Plastic
+                    data.Obj.Color = Color3.new(1, 1, 1)
+                end
+            end)
 
-			row.MouseEnter:Connect(function()
-				if data.Obj and data.Obj:IsA("BasePart") then
-					data.Obj.Material = Enum.Material.ForceField
-					data.Obj.Color = Color3.fromRGB(0, 170, 255)
-					edited[name] = true
-				end
-			end)
+            row.MouseEnter:Connect(function()
+                if data.Obj and data.Obj:IsA("BasePart") then
+                    data.Obj.Material = Enum.Material.ForceField
+                    data.Obj.Color = Color3.fromRGB(0, 150, 255)
+                    data.Obj.Transparency = 0.2
+                    edited[name] = true
+                end
+            end)
 
-			row.MouseLeave:Connect(function()
-				if data.Obj and data.Obj:IsA("BasePart") then
-					if not edited[name] then
-						data.Obj.Material = Enum.Material.Plastic
-						data.Obj.Color = Color3.fromRGB(255, 255, 255)
-					end
-				end
-			end)
+            row.MouseLeave:Connect(function()
+                if data.Obj and data.Obj:IsA("BasePart") then
+                    if not edited[name] then
+                        data.Obj.Material = Enum.Material.Plastic
+                        data.Obj.Color = Color3.new(1, 1, 1)
+                        data.Obj.Transparency = 0
+                    end
+                end
+            end)
 
-			row.Parent = scroll
-		end
-	end
+            row.Parent = scroll
+        end
+    end
 end
 
 searchBox:GetPropertyChangedSignal("Text"):Connect(updateTable)
 updateTable()
 
 saveBtn.MouseButton1Click:Connect(function()
-	local content = ""
-	for name in pairs(edited) do
-		content = content .. name .. "\n"
-	end
-	writefile("FunctionEdited.txt", content)
+    local content = ""
+    for name in pairs(edited) do
+        content = content .. name .. "\n"
+    end
+    writefile("FunctionEdited.txt", content)
 end)
 
 toggleBtn.MouseButton1Click:Connect(function()
-	frame.Visible = not frame.Visible
+    frame.Visible = not frame.Visible
 end)
