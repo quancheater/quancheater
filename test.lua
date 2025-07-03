@@ -109,7 +109,6 @@ local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 50)
 local noRecoilToggle = addToggle(tabFrames["ESP"], "No Recoil", 90)
 local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
 local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
-local potatoToggle = addToggle(tabFrames["ESP"], "giảm đồ hoạ", 210)
 local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
 local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
 
@@ -302,55 +301,15 @@ if noRecoilToggle() then
 end
 
 
-if potatoToggle() then
-    pcall(function()
-        local l = game:GetService("Lighting")
-        local ws = workspace
-        for _, v in pairs(l:GetChildren()) do
-            if v:IsA("PostEffect") or v:IsA("Sky") then v:Destroy() end
-        end
-        l.GlobalShadows = false
-        l.Brightness = 0
-        l.FogStart = 1e10
-        l.FogEnd = 1e10
-        l.FogColor = Color3.new()
-
-        local cam = ws.CurrentCamera
-        if cam then
-            for _, v in pairs(cam:GetChildren()) do
-                if v:IsA("DepthOfFieldEffect") or v:IsA("BlurEffect") then v:Destroy() end
-            end
-        end
-
-        for _, v in pairs(game:GetService("CoreGui"):GetDescendants()) do
-            if v:IsA("BlurEffect") then v.Enabled = false end
-        end
-
-        for _, v in pairs(ws:GetDescendants()) do
-            if v:IsA("Texture") or v:IsA("Decal") or v:IsA("SurfaceAppearance") or v:IsA("Highlight") or v:IsA("Beam") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Explosion") or v:IsA("ParticleEmitter") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") or v:IsA("BillboardGui") or v:IsA("Sparkles") then
-                if v:IsA("BillboardGui") or v:IsA("Texture") or v:IsA("Decal") or v:IsA("SurfaceAppearance") then v:Destroy() else v.Enabled = false end
-            end
-        end
-
-        local terrain = ws:FindFirstChildOfClass("Terrain")
-        if terrain then
-            terrain.WaterReflectance = 0
-            terrain.WaterTransparency = 1
-            terrain.WaterWaveSize = 0
-            terrain.WaterWaveSpeed = 0
-        end
-    end)
-end
-
 
 if aimbotToggle() then
-    local target, closestDist, lowestHP = nil, math.huge, math.huge
+    local target, closestDist = nil, math.huge
     local maxDist, fov = 150, 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     local function IsVisible(part)
         local origin = Camera.CFrame.Position
-        local direction = (part.Position - origin)
+        local direction = part.Position - origin
         local params = RaycastParams.new()
         params.FilterType = Enum.RaycastFilterType.Blacklist
         params.FilterDescendantsInstances = {LP.Character}
@@ -367,13 +326,11 @@ if aimbotToggle() then
                 if dist3D <= maxDist then
                     local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
                     local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-                    local dir = (head.Position - Camera.CFrame.Position).Unit
-                    local dot = dir:Dot(Camera.CFrame.LookVector)
+                    local dot = (head.Position - Camera.CFrame.Position).Unit:Dot(Camera.CFrame.LookVector)
                     if onScreen and dot > 0 and dist2D <= fov then
-                        if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and hum.Health < lowestHP) then
+                        if dist3D < closestDist then
                             target = head
                             closestDist = dist3D
-                            lowestHP = hum.Health
                         end
                     end
                 end
@@ -382,19 +339,13 @@ if aimbotToggle() then
     end
 
     if target then
-        local camPos = Camera.CFrame.Position
-        local lookAt = target.Position
-        Camera.CFrame = CFrame.new(camPos, lookAt)
-
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
         local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
         if recoil then
             for _, v in ipairs(recoil:GetChildren()) do
-                if v:IsA("NumberValue") or v:IsA("Vector3Value") then
-                    v.Value = 0
-                end
+                if v:IsA("NumberValue") or v:IsA("Vector3Value") then v.Value = 0 end
             end
         end
-
         pcall(function()
             for _, s in ipairs({
                 LP.PlayerScripts:FindFirstChild("GunRecoil"),
@@ -407,9 +358,7 @@ if aimbotToggle() then
                     if s:IsA("ModuleScript") then
                         local m = require(s)
                         for k, v in pairs(m) do
-                            if typeof(v) == "function" then
-                                m[k] = function() end
-                            end
+                            if typeof(v) == "function" then m[k] = function() end end
                         end
                     else
                         s:Destroy()
