@@ -274,31 +274,27 @@ if aimbotToggle() then
     local target = nil
     local minDist = math.huge
     local minHealth = math.huge
-    local maxAimDistance = 200
+    local maxAimDistance = 150
     local aimFovRadius = 180
-    local predictionTime = 0.14
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character then
-            local head = p.Character:FindFirstChild("Head")
-            local hrp = p.Character:FindFirstChild("HumanoidRootPart")
-            local hum = p.Character:FindFirstChild("Humanoid")
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") then
+            if not (p.Team and LP.Team and p.Team == LP.Team) then
+                local head = p.Character.Head
+                local hum = p.Character.Humanoid
 
-            if head and hrp and hum and hum.Health > 0 and hum.Health < math.huge then
-                if not (p.Team and LP.Team and p.Team == LP.Team) then
-                    local predicted = head.Position + hrp.Velocity * predictionTime
-                    local dist3D = (predicted - Camera.CFrame.Position).Magnitude
-
+                if hum.Health > 0 and hum.Health < math.huge then
+                    local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
                     if dist3D <= maxAimDistance then
-                        local sp, onScreen = Camera:WorldToViewportPoint(predicted)
-                        local dir = (predicted - Camera.CFrame.Position).Unit
+                        local sp, onScreen = Camera:WorldToViewportPoint(head.Position)
+                        local dir = (head.Position - Camera.CFrame.Position).Unit
                         local dot = dir:Dot(Camera.CFrame.LookVector)
                         local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
 
                         if onScreen and dot > 0 and dist2D < aimFovRadius then
                             if dist2D < minDist or (math.abs(dist2D - minDist) < 1 and hum.Health < minHealth) then
-                                target = predicted
+                                target = head.Position
                                 minDist = dist2D
                                 minHealth = hum.Health
                             end
