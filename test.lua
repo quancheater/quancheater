@@ -231,20 +231,37 @@ end
 
 if noRecoilToggle() then
 	local cam = workspace.CurrentCamera
-	if cam then
-		-- Xoá tất cả giá trị gây recoil
+
+	if cam and cam:FindFirstChild("RecoilScript") then
 		local recoilScript = cam:FindFirstChild("RecoilScript")
-		if recoilScript then
-			for _, v in pairs(recoilScript:GetDescendants()) do
-				if v:IsA("NumberValue") or v:IsA("Vector3Value") or v:IsA("CFrameValue") then
-					v.Value = typeof(v.Value) == "Vector3" and Vector3.zero or 0
+		for _, v in pairs(recoilScript:GetChildren()) do
+			if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+				v.Value = 0
+			end
+		end
+	end
+
+	if cam then
+		cam.CFrame = CFrame.new(cam.CFrame.Position, cam.CFrame.Position + cam.CFrame.LookVector)
+	end
+
+	for _, mod in ipairs(game:GetDescendants()) do
+		if mod:IsA("ModuleScript") and (mod.Name:lower():find("shaker") or mod.Name:lower():find("camerashake")) then
+			local success, result = pcall(function() return require(mod) end)
+			if success and typeof(result) == "table" then
+				for k, v in pairs(result) do
+					if typeof(v) == "function" then
+						result[k] = function() end
+					elseif typeof(v) == "table" then
+						for k2, v2 in pairs(v) do
+							if typeof(v2) == "function" then
+								v[k2] = function() end
+							end
+						end
+					end
 				end
 			end
 		end
-
-		-- Giữ nguyên hướng nhìn để chống shake
-		local lookDir = cam.CFrame.LookVector
-		cam.CFrame = CFrame.new(cam.CFrame.Position, cam.CFrame.Position + lookDir)
 	end
 end
 
@@ -406,21 +423,21 @@ if espToggle() or mobToggle() then
 
     if not counter or not counter.Parent then
         counter = Instance.new("TextLabel")
-        counter.Size = UDim2.new(0, 300, 0, 32)
+        counter.Size = UDim2.new(0, 400, 0, 40)
         counter.AnchorPoint = Vector2.new(0.5, 0)
-        counter.Position = UDim2.new(0.5, 0, 0, 40) -- đổi từ 22 -> 40 để không bị đè UI
+        counter.Position = UDim2.new(0.5, 0, 0, 8)
         counter.BackgroundTransparency = 1
-        counter.TextColor3 = Color3.fromRGB(255, 255, 0)
+        counter.TextColor3 = Color3.new(1, 1, 0)
         counter.TextStrokeColor3 = Color3.new(0, 0, 0)
-        counter.TextStrokeTransparency = 0.3
-        counter.Font = Enum.Font.GothamBold
-        counter.TextSize = 22
+        counter.TextStrokeTransparency = 0
+        counter.Font = Enum.Font.GothamBlack
+        counter.TextSize = 28
         counter.Name = "ESPCount"
         counter.ZIndex = 9999
         counter.Parent = game.CoreGui
     end
 
-    counter.Text = "ESP: " .. tostring(playerESPCount) .. " | MOB: " .. tostring(mobESPCount)
+    counter.Text = "ESP: " .. playerESPCount .. "  |  MOB: " .. mobESPCount
     counter.Visible = true
 
     for angle, _ in pairs(alertMap) do
@@ -437,19 +454,19 @@ else
     if counter then counter.Visible = false end
 end
 
+Players.PlayerRemoving:Connect(function(p)
+    if ESPdata[p] then
+        for _, d in pairs(ESPdata[p]) do
+            if typeof(d) == "table" then
+                for _, l in pairs(d) do l:Remove() end
+            else
+                d:Remove()
+            end
+        end
+        ESPdata[p] = nil
+    end
 end)
 
-Players.PlayerRemoving:Connect(function(p)
-	if ESPdata[p] then
-		for _, d in pairs(ESPdata[p]) do
-			if typeof(d) == "table" then
-				for _, l in pairs(d) do l:Remove() end
-			else
-				d:Remove()
-			end
-		end
-		ESPdata[p] = nil
-	end
 end)
 
 
