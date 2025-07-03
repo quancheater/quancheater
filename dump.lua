@@ -1,152 +1,135 @@
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
 
-local gui = Instance.new("ScreenGui", CoreGui)
-gui.Name = "QuanFunctionDebugger"
-gui.ResetOnSpawn = false
-
-local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0, 120, 0, 30)
-toggleBtn.Position = UDim2.new(0, 20, 0, 20)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 255)
-toggleBtn.Text = "Toggle Menu"
-toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 14
+-- UI
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "QuanClassHighlighter"
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 540, 0, 420)
-frame.Position = UDim2.new(0, 20, 0, 60)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.Size = UDim2.new(0, 450, 0, 400)
+frame.Position = UDim2.new(0, 100, 0, 100)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "🔍 Class Highlight Tool"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.BackgroundTransparency = 1
+
 local searchBox = Instance.new("TextBox", frame)
-searchBox.Size = UDim2.new(1, -10, 0, 30)
-searchBox.Position = UDim2.new(0, 5, 0, 5)
-searchBox.PlaceholderText = "Tìm từ khóa object..."
-searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-searchBox.TextColor3 = Color3.new(1, 1, 1)
+searchBox.Size = UDim2.new(1, -20, 0, 25)
+searchBox.Position = UDim2.new(0, 10, 0, 35)
+searchBox.PlaceholderText = "Tìm class..."
+searchBox.TextColor3 = Color3.new(1,1,1)
+searchBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 searchBox.TextSize = 14
+searchBox.Font = Enum.Font.Gotham
 
 local scroll = Instance.new("ScrollingFrame", frame)
-scroll.Size = UDim2.new(1, -10, 1, -80)
-scroll.Position = UDim2.new(0, 5, 0, 40)
-scroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-scroll.BorderSizePixel = 0
+scroll.Size = UDim2.new(1, -20, 1, -70)
+scroll.Position = UDim2.new(0, 10, 0, 65)
 scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scroll.ScrollBarThickness = 6
+scroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+scroll.BorderSizePixel = 0
 
-local UIList = Instance.new("UIListLayout", scroll)
-UIList.Padding = UDim.new(0, 4)
+local UIListLayout = Instance.new("UIListLayout", scroll)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 5)
 
-local saveBtn = Instance.new("TextButton", frame)
-saveBtn.Text = "Lưu Hàm"
-saveBtn.Size = UDim2.new(0, 100, 0, 28)
-saveBtn.Position = UDim2.new(1, -110, 1, -35)
-saveBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
-saveBtn.TextColor3 = Color3.new(1, 1, 1)
-saveBtn.Font = Enum.Font.GothamBold
-saveBtn.TextSize = 13
+-- Track highlighted
+local highlighted = {}
 
-local functionTable = {}
-local edited = {}
-
--- 🧠 Tạo danh sách các hàm/object từ toàn bộ game
-for _, obj in pairs(game:GetDescendants()) do
-    local id = obj:GetFullName()
-    if obj:IsA("BasePart") or obj:IsA("Model") then
-        functionTable[id] = {
-            Obj = obj,
-            Reset = function()
-                if obj:IsA("BasePart") then
-                    obj.Material = Enum.Material.Plastic
-                    obj.Color = Color3.new(1, 1, 1)
-                    obj.Transparency = 0
-                end
-            end
-        }
-    end
+-- Glow logic
+local function applyHighlight(obj)
+	for _, p in pairs(obj:GetDescendants()) do
+		if p:IsA("BasePart") then
+			p.Transparency = 0.3
+			p.Material = Enum.Material.ForceField
+			p.Color = Color3.fromRGB(0, 120, 255)
+		end
+	end
 end
 
--- 🧠 Giao diện
-local function updateTable()
-    for _, child in pairs(scroll:GetChildren()) do
-        if child:IsA("Frame") then child:Destroy() end
-    end
-
-    for name, data in pairs(functionTable) do
-        if searchBox.Text == "" or string.find(name:lower(), searchBox.Text:lower()) then
-            local row = Instance.new("Frame")
-            row.Size = UDim2.new(1, 0, 0, 30)
-            row.BackgroundTransparency = 1
-
-            local label = Instance.new("TextLabel", row)
-            label.Text = name
-            label.Size = UDim2.new(0.8, 0, 1, 0)
-            label.BackgroundTransparency = 1
-            label.TextColor3 = Color3.new(1, 1, 1)
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 13
-
-            local resetBtn = Instance.new("TextButton", row)
-            resetBtn.Text = "Reset"
-            resetBtn.Size = UDim2.new(0, 60, 0, 25)
-            resetBtn.Position = UDim2.new(1, -70, 0.5, -12)
-            resetBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-            resetBtn.TextColor3 = Color3.new(1, 1, 1)
-            resetBtn.Font = Enum.Font.GothamBold
-            resetBtn.TextSize = 13
-
-            resetBtn.MouseButton1Click:Connect(function()
-                if data.Reset then data.Reset() end
-                edited[name] = nil
-                if data.Obj and data.Obj:IsA("BasePart") then
-                    data.Obj.Material = Enum.Material.Plastic
-                    data.Obj.Color = Color3.new(1, 1, 1)
-                end
-            end)
-
-            row.MouseEnter:Connect(function()
-                if data.Obj and data.Obj:IsA("BasePart") then
-                    data.Obj.Material = Enum.Material.ForceField
-                    data.Obj.Color = Color3.fromRGB(0, 150, 255)
-                    data.Obj.Transparency = 0.2
-                    edited[name] = true
-                end
-            end)
-
-            row.MouseLeave:Connect(function()
-                if data.Obj and data.Obj:IsA("BasePart") then
-                    if not edited[name] then
-                        data.Obj.Material = Enum.Material.Plastic
-                        data.Obj.Color = Color3.new(1, 1, 1)
-                        data.Obj.Transparency = 0
-                    end
-                end
-            end)
-
-            row.Parent = scroll
-        end
-    end
+local function resetHighlight(obj)
+	for _, p in pairs(obj:GetDescendants()) do
+		if p:IsA("BasePart") then
+			p.Transparency = 0
+			p.Material = Enum.Material.Plastic
+		end
+	end
 end
 
-searchBox:GetPropertyChangedSignal("Text"):Connect(updateTable)
-updateTable()
+-- Build buttons per class
+local function buildButtons()
+	scroll:ClearAllChildren()
+	local listed = {}
 
-saveBtn.MouseButton1Click:Connect(function()
-    local content = ""
-    for name in pairs(edited) do
-        content = content .. name .. "\n"
-    end
-    writefile("FunctionEdited.txt", content)
-end)
+	for _, obj in pairs(workspace:GetDescendants()) do
+		local class = obj.ClassName
+		if not listed[class] then
+			if searchBox.Text == "" or string.find(class:lower(), searchBox.Text:lower()) then
+				listed[class] = true
 
-toggleBtn.MouseButton1Click:Connect(function()
-    frame.Visible = not frame.Visible
-end)
+				local row = Instance.new("Frame")
+				row.Size = UDim2.new(1, 0, 0, 30)
+				row.BackgroundTransparency = 1
+				row.Parent = scroll
+
+				local nameLabel = Instance.new("TextLabel", row)
+				nameLabel.Size = UDim2.new(0.5, 0, 1, 0)
+				nameLabel.Text = class
+				nameLabel.TextColor3 = Color3.new(1,1,1)
+				nameLabel.Font = Enum.Font.Gotham
+				nameLabel.TextSize = 14
+				nameLabel.BackgroundTransparency = 1
+				nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+				local glowBtn = Instance.new("TextButton", row)
+				glowBtn.Size = UDim2.new(0.2, 0, 1, 0)
+				glowBtn.Position = UDim2.new(0.5, 5, 0, 0)
+				glowBtn.Text = "Glow"
+				glowBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+				glowBtn.TextColor3 = Color3.new(1, 1, 1)
+				glowBtn.Font = Enum.Font.Gotham
+				glowBtn.TextSize = 13
+
+				local resetBtn = Instance.new("TextButton", row)
+				resetBtn.Size = UDim2.new(0.2, 0, 1, 0)
+				resetBtn.Position = UDim2.new(0.7, 10, 0, 0)
+				resetBtn.Text = "Reset"
+				resetBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+				resetBtn.TextColor3 = Color3.new(1, 1, 1)
+				resetBtn.Font = Enum.Font.Gotham
+				resetBtn.TextSize = 13
+
+				glowBtn.MouseButton1Click:Connect(function()
+					for _, item in pairs(workspace:GetDescendants()) do
+						if item.ClassName == class then
+							applyHighlight(item)
+						end
+					end
+				end)
+
+				resetBtn.MouseButton1Click:Connect(function()
+					for _, item in pairs(workspace:GetDescendants()) do
+						if item.ClassName == class then
+							resetHighlight(item)
+						end
+					end
+				end)
+			end
+		end
+	end
+	scroll.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+end
+
+searchBox:GetPropertyChangedSignal("Text"):Connect(buildButtons)
+buildButtons()
