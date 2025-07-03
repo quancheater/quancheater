@@ -189,27 +189,58 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	if itemPickToggle() then
-		for _, o in pairs(workspace:GetDescendants()) do
-			if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
-				if not ItemPick[o] then
-					local txt = Drawing.new("Text")
-					txt.Size = 13 txt.Color = Color3.fromRGB(0, 255, 255) txt.Center = true txt.Outline = true
-					ItemPick[o] = txt
+local UIS = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local ItemPick = {}
+local pickedItems = {}
+local dragging = false
+
+UIS.InputBegan:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+	end
+end)
+UIS.InputEnded:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+-- Gộp toàn bộ logic vào đúng if
+if itemPickToggle() then
+	local mousePos = UIS:GetMouseLocation()
+	for _, o in pairs(workspace:GetDescendants()) do
+		if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
+			if not ItemPick[o] then
+				local txt = Drawing.new("Text")
+				txt.Size = 13
+				txt.Color = Color3.fromRGB(0, 255, 255)
+				txt.Center = true
+				txt.Outline = true
+				ItemPick[o] = txt
+			end
+
+			local pos = o:IsA("Model") and (o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position) or o.Position
+			local screen, onScreen = Camera:WorldToViewportPoint(pos)
+			local draw = ItemPick[o]
+			draw.Position = Vector2.new(screen.X, screen.Y)
+			draw.Text = "[Pick] " .. o.Name
+			draw.Visible = onScreen
+
+			-- Nếu kéo chuột và cursor gần item
+			if dragging and onScreen and (Vector2.new(screen.X, screen.Y) - mousePos).Magnitude < 25 then
+				local id = o:GetDebugId()
+				if not pickedItems[id] then
+					pickedItems[id] = true
+					appendfile("ItemsStored.txt", o:GetFullName() .. "\n")
 				end
-				local pos
-				if o:IsA("Model") then
-					pos = o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position
-				else
-					pos = o.Position
-				end
-				local sp, on = Camera:WorldToViewportPoint(pos)
-				ItemPick[o].Position = Vector2.new(sp.X, sp.Y)
-				ItemPick[o].Text = "[Pick] " .. o.Name
-				ItemPick[o].Visible = on
 			end
 		end
 	end
+else
+	for _, v in pairs(ItemPick) do if v.Remove then v:Remove() end end
+	ItemPick = {}
+end
 
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
