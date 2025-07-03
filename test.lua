@@ -272,6 +272,7 @@ end
 
 if aimbotToggle() then
     local target = nil
+    local closestDist2D = math.huge
     local maxDist = 180
     local fov = 120
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -288,8 +289,10 @@ if aimbotToggle() then
                     local dir = (head.Position - Camera.CFrame.Position).Unit
                     local dot = dir:Dot(Camera.CFrame.LookVector)
                     if onScreen and dot > 0 and dist2D <= fov then
-                        target = head
-                        break
+                        if dist2D < closestDist2D then
+                            target = head
+                            closestDist2D = dist2D
+                        end
                     end
                 end
             end
@@ -298,30 +301,30 @@ if aimbotToggle() then
 
     if target then
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
-        local line = Drawing.new("Line")
-        local screenPos = Camera:WorldToViewportPoint(target.Position)
-        line.From = center
-        line.To = Vector2.new(screenPos.X, screenPos.Y)
-        line.Color = Color3.fromRGB(255, 0, 0)
-        line.Thickness = 2
-        line.Transparency = 1
-        line.ZIndex = 2
-        task.delay(0.03, function() line:Remove() end)
     end
 end
 
 pcall(function()
-    local recoil = LP.PlayerScripts:FindFirstChild("GunRecoil") or LP.PlayerScripts:FindFirstChild("Recoil")
-    if recoil then
-        if recoil:IsA("ModuleScript") then
-            local mod = require(recoil)
-            for k, v in pairs(mod) do
-                if typeof(v) == "function" then
-                    mod[k] = function() end
+    local scripts = {
+        LP.PlayerScripts:FindFirstChild("GunRecoil"),
+        LP.PlayerScripts:FindFirstChild("Recoil"),
+        LP.PlayerScripts:FindFirstChild("CameraShake"),
+        LP.Character and LP.Character:FindFirstChild("CameraShakeScript"),
+        LP.Character and LP.Character:FindFirstChild("RecoilScript")
+    }
+
+    for _, s in ipairs(scripts) do
+        if s then
+            if s:IsA("ModuleScript") then
+                local m = require(s)
+                for k, v in pairs(m) do
+                    if typeof(v) == "function" then
+                        m[k] = function() end
+                    end
                 end
+            else
+                s:Destroy()
             end
-        else
-            recoil:Destroy()
         end
     end
 end)
