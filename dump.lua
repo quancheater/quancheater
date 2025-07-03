@@ -2,8 +2,18 @@ local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
+-- GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "QuanClassMenu"
+
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0, 120, 0, 35)
+toggleBtn.Position = UDim2.new(0, 20, 0, 60)
+toggleBtn.Text = "Toggle Menu"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 14
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 350, 0, 500)
@@ -12,6 +22,10 @@ frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
+
+toggleBtn.MouseButton1Click:Connect(function()
+	frame.Visible = not frame.Visible
+end)
 
 local title = Instance.new("TextLabel", frame)
 title.Text = "QuanCheaterVN Class Viewer"
@@ -59,151 +73,132 @@ scroll.ScrollBarThickness = 6
 scroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 scroll.BorderSizePixel = 0
 
-local currentHighlights = {}
+local currentHighlights, buttons = {}, {}
 
 local function clearHighlights(className)
-    for _, obj in pairs(currentHighlights[className] or {}) do
-        if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.Plastic
-            obj.Transparency = 0
-        end
-    end
-    currentHighlights[className] = {}
+	for _, obj in pairs(currentHighlights[className] or {}) do
+		if obj:IsA("BasePart") then
+			obj.Material = Enum.Material.Plastic
+			obj.Transparency = 0
+		end
+	end
+	currentHighlights[className] = {}
 end
 
 local function resetAllHighlights()
-    for className, _ in pairs(currentHighlights) do
-        clearHighlights(className)
-    end
+	for k in pairs(currentHighlights) do
+		clearHighlights(k)
+	end
 end
 
 local function highlightClass(className, objects)
-    clearHighlights(className)
-    currentHighlights[className] = {}
+	clearHighlights(className)
+	currentHighlights[className] = {}
 
-    for _, obj in ipairs(objects) do
-        if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.Neon
-            obj.Color = Color3.fromRGB(0, 180, 255)
-            obj.Transparency = 0.2
-            table.insert(currentHighlights[className], obj)
-        elseif obj:IsA("Model") then
-            for _, part in ipairs(obj:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.Material = Enum.Material.Neon
-                    part.Color = Color3.fromRGB(0, 180, 255)
-                    part.Transparency = 0.2
-                    table.insert(currentHighlights[className], part)
-                end
-            end
-        end
-    end
+	for _, obj in ipairs(objects) do
+		if obj:IsA("BasePart") then
+			obj.Material = Enum.Material.Neon
+			obj.Color = Color3.fromRGB(0, 180, 255)
+			obj.Transparency = 0.2
+			table.insert(currentHighlights[className], obj)
+		elseif obj:IsA("Model") then
+			for _, part in ipairs(obj:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Material = Enum.Material.Neon
+					part.Color = Color3.fromRGB(0, 180, 255)
+					part.Transparency = 0.2
+					table.insert(currentHighlights[className], part)
+				end
+			end
+		end
+	end
 end
 
 resetAll.MouseButton1Click:Connect(resetAllHighlights)
 
 local function collectClasses()
-    local map = {}
-    for _, obj in ipairs(game:GetDescendants()) do
-        local cls = obj.ClassName
-        if not map[cls] then map[cls] = {} end
-        table.insert(map[cls], obj)
-    end
+	local map = {}
+	for _, obj in ipairs(game:GetDescendants()) do
+		local cls = obj.ClassName
+		if not map[cls] then map[cls] = {} end
+		table.insert(map[cls], obj)
+	end
 
-    map["Player"] = {}
-    map["NPC"] = {}
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p.Character then table.insert(map["Player"], p.Character) end
-    end
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and not Players:GetPlayerFromCharacter(obj) then
-            table.insert(map["NPC"], obj)
-        end
-    end
-
-    return map
+	map["Player"] = {}
+	map["NPC"] = {}
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p.Character then table.insert(map["Player"], p.Character) end
+	end
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and not Players:GetPlayerFromCharacter(obj) then
+			table.insert(map["NPC"], obj)
+		end
+	end
+	return map
 end
-
--- Track class đã lưu để tránh ghi trùng
-local savedClassNames = {}
-pcall(function()
-    if isfile("ClassesSet.txt") then
-        for line in string.gmatch(readfile("ClassesSet.txt"), "[^\r\n]+") do
-            savedClassNames[line] = true
-        end
-    end
-end)
-
-local function saveClassToFile(className)
-    if not savedClassNames[className] then
-        appendfile("ClassesSet.txt", className .. "\n")
-        savedClassNames[className] = true
-    end
-end
-
-saveSet.MouseButton1Click:Connect(function()
-    for className, parts in pairs(currentHighlights) do
-        if parts and #parts > 0 then
-            saveClassToFile(className)
-        end
-    end
-end)
-
-local buttons = {}
 
 local function updateSearch(keyword)
-    for _, btn in pairs(buttons) do btn:Destroy() end
-    buttons = {}
+	for _, b in ipairs(buttons) do b:Destroy() end
+	buttons = {}
 
-    local y = 0
-    local classMap = collectClasses()
+	local y = 0
+	local classMap = collectClasses()
 
-    for className, objects in pairs(classMap) do
-        if keyword == "" or className:lower():find(keyword:lower()) then
-            local row = Instance.new("Frame", scroll)
-            row.Size = UDim2.new(1, 0, 0, 28)
-            row.Position = UDim2.new(0, 0, 0, y)
-            row.BackgroundTransparency = 1
+	for className, objects in pairs(classMap) do
+		if keyword == "" or className:lower():find(keyword:lower()) then
+			local row = Instance.new("Frame", scroll)
+			row.Size = UDim2.new(1, 0, 0, 28)
+			row.Position = UDim2.new(0, 0, 0, y)
+			row.BackgroundTransparency = 1
 
-            local classBtn = Instance.new("TextButton", row)
-            classBtn.Size = UDim2.new(1, -110, 0, 28)
-            classBtn.Position = UDim2.new(0, 0, 0, 0)
-            classBtn.Text = className .. " [" .. tostring(#objects) .. "]"
-            classBtn.Font = Enum.Font.Gotham
-            classBtn.TextSize = 13
-            classBtn.TextColor3 = Color3.new(1, 1, 1)
-            classBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            classBtn.BorderSizePixel = 0
+			local classBtn = Instance.new("TextButton", row)
+			classBtn.Size = UDim2.new(1, -110, 0, 28)
+			classBtn.Position = UDim2.new(0, 0, 0, 0)
+			classBtn.Text = className .. " [" .. tostring(#objects) .. "]"
+			classBtn.Font = Enum.Font.Gotham
+			classBtn.TextSize = 13
+			classBtn.TextColor3 = Color3.new(1, 1, 1)
+			classBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+			classBtn.BorderSizePixel = 0
 
-            local resetBtn = Instance.new("TextButton", row)
-            resetBtn.Size = UDim2.new(0, 100, 0, 28)
-            resetBtn.Position = UDim2.new(1, -100, 0, 0)
-            resetBtn.Text = "Reset"
-            resetBtn.Font = Enum.Font.Gotham
-            resetBtn.TextSize = 13
-            resetBtn.TextColor3 = Color3.new(1, 1, 1)
-            resetBtn.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
-            resetBtn.BorderSizePixel = 0
+			local resetBtn = Instance.new("TextButton", row)
+			resetBtn.Size = UDim2.new(0, 100, 0, 28)
+			resetBtn.Position = UDim2.new(1, -100, 0, 0)
+			resetBtn.Text = "Reset"
+			resetBtn.Font = Enum.Font.Gotham
+			resetBtn.TextSize = 13
+			resetBtn.TextColor3 = Color3.new(1, 1, 1)
+			resetBtn.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
+			resetBtn.BorderSizePixel = 0
 
-            classBtn.MouseButton1Click:Connect(function()
-                highlightClass(className, objects)
-                saveClassToFile(className)
-            end)
+			classBtn.MouseButton1Click:Connect(function()
+				highlightClass(className, objects)
+			end)
 
-            resetBtn.MouseButton1Click:Connect(function()
-                clearHighlights(className)
-            end)
+			resetBtn.MouseButton1Click:Connect(function()
+				clearHighlights(className)
+			end)
 
-            table.insert(buttons, row)
-            y += 30
-        end
-    end
+			table.insert(buttons, row)
+			y += 30
+		end
+	end
 
-    scroll.CanvasSize = UDim2.new(0, 0, 0, y)
+	scroll.CanvasSize = UDim2.new(0, 0, 0, y)
 end
 
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    updateSearch(searchBox.Text)
+	updateSearch(searchBox.Text)
+end)
+
+saveSet.MouseButton1Click:Connect(function()
+	local lines = {}
+	for className, objects in pairs(currentHighlights) do
+		if #objects > 0 then
+			table.insert(lines, className)
+		end
+	end
+	writefile("QuanClassSet.txt", table.concat(lines, "\n"))
 end)
 
 updateSearch("")
