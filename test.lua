@@ -275,9 +275,7 @@ if aimbotToggle() then
     local minHealth = math.huge
     local minDist = math.huge
     local maxDist = 150
-    local fov = 180
-    local smooth = 0.15
-
+    local fov = 120
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, p in pairs(Players:GetPlayers()) do
@@ -291,7 +289,6 @@ if aimbotToggle() then
                     local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
                     local dir = (head.Position - Camera.CFrame.Position).Unit
                     local dot = dir:Dot(Camera.CFrame.LookVector)
-                    
                     if onScreen and dot > 0 and dist2D <= fov then
                         if hum.Health < minHealth or (hum.Health == minHealth and dist2D < minDist) then
                             target = head
@@ -305,22 +302,18 @@ if aimbotToggle() then
     end
 
     if target then
-        local camPos = Camera.CFrame.Position
-        local aimDir = (target.Position - camPos).Unit
-        local smoothDir = Camera.CFrame.LookVector:Lerp(aimDir, smooth)
-        Camera.CFrame = CFrame.new(camPos, camPos + smoothDir)
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
     end
 end
 
--- NORECOIL PATCH 100%
 pcall(function()
     local recoil = LP.PlayerScripts:FindFirstChild("GunRecoil") or LP.PlayerScripts:FindFirstChild("Recoil")
     if recoil then
         if recoil:IsA("ModuleScript") then
-            local m = require(recoil)
-            for k, v in pairs(m) do
+            local mod = require(recoil)
+            for k, v in pairs(mod) do
                 if typeof(v) == "function" then
-                    m[k] = function() end
+                    mod[k] = function() end
                 end
             end
         else
