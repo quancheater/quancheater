@@ -301,37 +301,41 @@ if noRecoilToggle() then
 end
 
 
+
 local ShootFunc = game:GetService("ReplicatedStorage"):WaitForChild("Function"):WaitForChild("Gameplay"):WaitForChild("Shoot")
 local oldInvoke = ShootFunc.InvokeServer
 
 ShootFunc.InvokeServer = function(self, ...)
-    local args = { ... }
-    local weapon = LP.Character and LP.Character:FindFirstChild("CurrentWeaponAccessoryRightHand")
-    if weapon then
-        local Camera = workspace.CurrentCamera
+    if aimbotToggle() then
+        local cam = workspace.CurrentCamera
+        local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
         local target, minDist, lowHp = nil, math.huge, math.huge
-        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
         local function IsVisible(p)
-            local o, d = Camera.CFrame.Position, (p.Position - Camera.CFrame.Position)
-            local r = workspace:Raycast(o, d, RaycastParams.new())
+            local o = cam.CFrame.Position
+            local d = (p.Position - o)
+            local r = RaycastParams.new()
             r.FilterType = Enum.RaycastFilterType.Blacklist
             r.FilterDescendantsInstances = {LP.Character}
-            r = workspace:Raycast(o, d, r)
-            return not r or r.Instance:IsDescendantOf(p.Parent)
+            local hit = workspace:Raycast(o, d, r)
+            return not hit or hit.Instance:IsDescendantOf(p.Parent)
         end
 
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LP and p.Team ~= LP.Team and p.Character then
-                local h, r, u = p.Character:FindFirstChild("Head"), p.Character:FindFirstChild("HumanoidRootPart"), p.Character:FindFirstChild("Humanoid")
+                local h = p.Character:FindFirstChild("Head")
+                local r = p.Character:FindFirstChild("HumanoidRootPart")
+                local u = p.Character:FindFirstChild("Humanoid")
                 if h and r and u and u.Health > 0 and IsVisible(h) then
                     local pos = h.Position + r.Velocity * 0.12
-                    local d = (pos - Camera.CFrame.Position).Magnitude
-                    local s, on = Camera:WorldToViewportPoint(pos)
-                    local v2 = (Vector2.new(s.X, s.Y) - center).Magnitude
-                    if on and v2 <= 180 and d <= 150 then
-                        if d < minDist or (math.abs(d - minDist) < 1 and u.Health < lowHp) then
-                            target, minDist, lowHp = pos, d, u.Health
+                    local dist = (pos - cam.CFrame.Position).Magnitude
+                    if dist <= 150 then
+                        local s, on = cam:WorldToViewportPoint(pos)
+                        local d2d = (Vector2.new(s.X, s.Y) - center).Magnitude
+                        if on and d2d <= 180 then
+                            if dist < minDist or (math.abs(dist - minDist) < 1 and u.Health < lowHp) then
+                                target, minDist, lowHp = pos, dist, u.Health
+                            end
                         end
                     end
                 end
@@ -339,9 +343,13 @@ ShootFunc.InvokeServer = function(self, ...)
         end
 
         if target then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target)
-            local r = Camera:FindFirstChild("RecoilScript")
-            if r then for _, v in ipairs(r:GetChildren()) do if v:IsA("NumberValue") or v:IsA("Vector3Value") then v.Value = 0 end end end
+            cam.CFrame = CFrame.new(cam.CFrame.Position, target)
+            local recoil = cam:FindFirstChild("RecoilScript")
+            if recoil then
+                for _, v in ipairs(recoil:GetChildren()) do
+                    if v:IsA("NumberValue") or v:IsA("Vector3Value") then v.Value = 0 end
+                end
+            end
             for _, s in ipairs({
                 LP.PlayerScripts:FindFirstChild("GunRecoil"),
                 LP.PlayerScripts:FindFirstChild("Recoil"),
@@ -352,15 +360,17 @@ ShootFunc.InvokeServer = function(self, ...)
                 if s then
                     if s:IsA("ModuleScript") then
                         local m = require(s)
-                        for k,v in pairs(m) do if typeof(v)=="function" then m[k]=function()end end end
-                    else s:Destroy() end
+                        for k,v in pairs(m) do if typeof(v) == "function" then m[k] = function() end end end
+                    else
+                        s:Destroy()
+                    end
                 end
             end
         end
     end
-    return oldInvoke(self, unpack(args))
-end
 
+    return oldInvoke(self, ...)
+end
 
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
