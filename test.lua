@@ -238,37 +238,33 @@ else
 end
 
 if noRecoilToggle() then
-	local cam = workspace.CurrentCamera
+    local cam = workspace.CurrentCamera
+    if cam and cam:FindFirstChild("RecoilScript") then
+        for _, v in ipairs(cam.RecoilScript:GetChildren()) do
+            if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                v.Value = 0
+            end
+        end
+    end
 
-	if cam and cam:FindFirstChild("RecoilScript") then
-		for _, v in ipairs(cam.RecoilScript:GetChildren()) do
-			if v:IsA("NumberValue") or v:IsA("Vector3Value") then
-				v.Value = 0
-			end
-		end
-	end
-
-	for _, mod in ipairs(game:GetDescendants()) do
-		if mod:IsA("ModuleScript") then
-			local lname = mod.Name:lower()
-			if lname:find("shake") or lname:find("recoil") or lname:find("cam") then
-				local succ, result = pcall(require, mod)
-				if succ and typeof(result) == "table" then
-					for k, v in pairs(result) do
-						if typeof(v) == "function" then
-							result[k] = function() return end
-						elseif typeof(v) == "table" then
-							for k2, v2 in pairs(v) do
-								if typeof(v2) == "function" then
-									v[k2] = function() return end
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	end
+    for _, mod in ipairs(game:GetDescendants()) do
+        if mod:IsA("ModuleScript") and mod.Name:lower():find("recoil") then
+            local ok, module = pcall(require, mod)
+            if ok and typeof(module) == "table" then
+                for k, v in pairs(module) do
+                    if typeof(v) == "function" then
+                        module[k] = function() return end
+                    elseif typeof(v) == "table" then
+                        for k2, v2 in pairs(v) do
+                            if typeof(v2) == "function" then
+                                v[k2] = function() return end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 if aimbotToggle() then
