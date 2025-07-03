@@ -109,6 +109,7 @@ local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 50)
 local noRecoilToggle = addToggle(tabFrames["ESP"], "No Recoil", 90)
 local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
 local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
+local potatoToggle = addToggle(tabFrames["ESP"], "giảm đồ hoạ", 210)
 local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
 local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
 
@@ -300,6 +301,46 @@ if noRecoilToggle() then
 	end
 end
 
+
+if potatoToggle() then
+    pcall(function()
+        local l = game:GetService("Lighting")
+        local ws = workspace
+        for _, v in pairs(l:GetChildren()) do
+            if v:IsA("PostEffect") or v:IsA("Sky") then v:Destroy() end
+        end
+        l.GlobalShadows = false
+        l.Brightness = 0
+        l.FogStart = 1e10
+        l.FogEnd = 1e10
+        l.FogColor = Color3.new()
+
+        local cam = ws.CurrentCamera
+        if cam then
+            for _, v in pairs(cam:GetChildren()) do
+                if v:IsA("DepthOfFieldEffect") or v:IsA("BlurEffect") then v:Destroy() end
+            end
+        end
+
+        for _, v in pairs(game:GetService("CoreGui"):GetDescendants()) do
+            if v:IsA("BlurEffect") then v.Enabled = false end
+        end
+
+        for _, v in pairs(ws:GetDescendants()) do
+            if v:IsA("Texture") or v:IsA("Decal") or v:IsA("SurfaceAppearance") or v:IsA("Highlight") or v:IsA("Beam") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Explosion") or v:IsA("ParticleEmitter") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") or v:IsA("BillboardGui") or v:IsA("Sparkles") then
+                if v:IsA("BillboardGui") or v:IsA("Texture") or v:IsA("Decal") or v:IsA("SurfaceAppearance") then v:Destroy() else v.Enabled = false end
+            end
+        end
+
+        local terrain = ws:FindFirstChildOfClass("Terrain")
+        if terrain then
+            terrain.WaterReflectance = 0
+            terrain.WaterTransparency = 1
+            terrain.WaterWaveSize = 0
+            terrain.WaterWaveSpeed = 0
+        end
+    end)
+end
 
 
 if aimbotToggle() then
