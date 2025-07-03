@@ -180,78 +180,36 @@ RunService.RenderStepped:Connect(function()
 		LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
 	end
 
-for obj, txt in pairs(ItemPick) do
-	if not obj:IsDescendantOf(workspace) then
-		txt:Remove()
-		ItemPick[obj] = nil
+	for obj, txt in pairs(ItemPick) do
+		if not obj:IsDescendantOf(workspace) then
+			txt:Remove()
+			ItemPick[obj] = nil
+		else
+			txt.Visible = false
+		end
 	end
-end
 
-if itemPickToggle() then
-    if not ItemPick then ItemPick = {} end
-
-    for obj, txt in pairs(ItemPick) do
-        if not obj or not obj.Parent then
-            if txt and txt.Remove then
-                txt:Remove()
-            end
-            ItemPick[obj] = nil
-        end
-    end
-
-    for _, o in pairs(workspace:GetDescendants()) do
-        if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
-            local pos
-
-            if o:IsA("Model") then
-                if not o.PrimaryPart then
-                    local primary = o:FindFirstChild("HumanoidRootPart") or o:FindFirstChildWhichIsA("BasePart")
-                    if primary then
-                        pcall(function() o.PrimaryPart = primary end)
-                    end
-                end
-                if o.PrimaryPart then
-                    pos = o.PrimaryPart.Position
-                else
-                    local success
-                    success, pos = pcall(function() return o:GetPivot().Position end)
-                    if not success then continue end
-                end
-            else
-                pos = o.Position
-            end
-
-            local sp, onScreen = Camera:WorldToViewportPoint(pos)
-            local dir = (pos - Camera.CFrame.Position).Unit
-            local inFront = dir:Dot(Camera.CFrame.LookVector) > 0
-
-            if not ItemPick[o] then
-                local txt = Drawing.new("Text")
-                txt.Size = 13
-                txt.Color = Color3.fromRGB(0, 255, 255)
-                txt.Center = true
-                txt.Outline = true
-                txt.Visible = false
-                ItemPick[o] = txt
-            end
-
-            local draw = ItemPick[o]
-            draw.Text = "[Pick] " .. o.Name
-            draw.Position = Vector2.new(sp.X, sp.Y)
-            draw.Visible = onScreen and inFront
-        end
-    end
-else
-    if ItemPick then
-        for obj, txt in pairs(ItemPick) do
-            if txt and txt.Remove then
-                txt:Remove()
-            end
-        end
-        ItemPick = {}
-    end
-end
-
+	if itemPickToggle() then
+		for _, o in pairs(workspace:GetDescendants()) do
+			if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
+				if not ItemPick[o] then
+					local txt = Drawing.new("Text")
+					txt.Size = 13 txt.Color = Color3.fromRGB(0, 255, 255) txt.Center = true txt.Outline = true
+					ItemPick[o] = txt
+				end
+				local pos
+				if o:IsA("Model") then
+					pos = o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position
+				else
+					pos = o.Position
+				end
+				local sp, on = Camera:WorldToViewportPoint(pos)
+				ItemPick[o].Position = Vector2.new(sp.X, sp.Y)
+				ItemPick[o].Text = "[Pick] " .. o.Name
+				ItemPick[o].Visible = on
+			end
+		end
+	end
 
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
