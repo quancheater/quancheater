@@ -269,12 +269,14 @@ if noRecoilToggle() then
 	end
 end
 
+
 if aimbotToggle() then
     local target = nil
     local minHealth = math.huge
     local minDist = math.huge
-    local maxAimDistance = 150
-    local aimFovRadius = 180
+    local maxDist = 150
+    local fov = 180
+    local smooth = 0.15
 
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
@@ -282,20 +284,19 @@ if aimbotToggle() then
         if p ~= LP and p.Team ~= LP.Team and p.Character then
             local head = p.Character:FindFirstChild("Head")
             local hum = p.Character:FindFirstChild("Humanoid")
-
-            if head and hum and hum.Health > 0 and hum.Health < math.huge then
-                local distance3D = (head.Position - Camera.CFrame.Position).Magnitude
-                if distance3D <= maxAimDistance then
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                    local screenDist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-                    local direction = (head.Position - Camera.CFrame.Position).Unit
-                    local dot = direction:Dot(Camera.CFrame.LookVector)
-
-                    if onScreen and dot > 0 and screenDist <= aimFovRadius then
-                        if hum.Health < minHealth or (hum.Health == minHealth and screenDist < minDist) then
+            if head and hum and hum.Health > 0 then
+                local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
+                if dist3D <= maxDist then
+                    local sp, onScreen = Camera:WorldToViewportPoint(head.Position)
+                    local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                    local dir = (head.Position - Camera.CFrame.Position).Unit
+                    local dot = dir:Dot(Camera.CFrame.LookVector)
+                    
+                    if onScreen and dot > 0 and dist2D <= fov then
+                        if hum.Health < minHealth or (hum.Health == minHealth and dist2D < minDist) then
                             target = head
                             minHealth = hum.Health
-                            minDist = screenDist
+                            minDist = dist2D
                         end
                     end
                 end
@@ -304,10 +305,29 @@ if aimbotToggle() then
     end
 
     if target then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        local camPos = Camera.CFrame.Position
+        local aimDir = (target.Position - camPos).Unit
+        local smoothDir = Camera.CFrame.LookVector:Lerp(aimDir, smooth)
+        Camera.CFrame = CFrame.new(camPos, camPos + smoothDir)
     end
 end
 
+-- NORECOIL PATCH 100%
+pcall(function()
+    local recoil = LP.PlayerScripts:FindFirstChild("GunRecoil") or LP.PlayerScripts:FindFirstChild("Recoil")
+    if recoil then
+        if recoil:IsA("ModuleScript") then
+            local m = require(recoil)
+            for k, v in pairs(m) do
+                if typeof(v) == "function" then
+                    m[k] = function() end
+                end
+            end
+        else
+            recoil:Destroy()
+        end
+    end
+end)
 
 if espToggle() or mobToggle() then
     playerESPCount = 0
