@@ -238,26 +238,40 @@ else
 end
 
 if noRecoilToggle() then
-    local cam = workspace.CurrentCamera
-    if cam and cam:FindFirstChild("RecoilScript") then
-        for _, v in ipairs(cam.RecoilScript:GetChildren()) do
-            if v:IsA("NumberValue") or v:IsA("Vector3Value") then
-                v.Value = 0
+    for _, weapon in ipairs(game:GetDescendants()) do
+        if weapon:IsA("Tool") then
+            local recoil = weapon:FindFirstChild("Recoil", true)
+            if recoil then
+                for _, v in ipairs(recoil:GetDescendants()) do
+                    if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                        v.Value = 0
+                    end
+                end
+            end
+
+            local shake = weapon:FindFirstChild("Shake", true)
+            if shake then
+                for _, v in ipairs(shake:GetDescendants()) do
+                    if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                        v.Value = 0
+                    end
+                end
             end
         end
-    end
 
-    for _, mod in ipairs(game:GetDescendants()) do
-        if mod:IsA("ModuleScript") and mod.Name:lower():find("recoil") then
-            local ok, module = pcall(require, mod)
-            if ok and typeof(module) == "table" then
-                for k, v in pairs(module) do
-                    if typeof(v) == "function" then
-                        module[k] = function() return end
-                    elseif typeof(v) == "table" then
-                        for k2, v2 in pairs(v) do
-                            if typeof(v2) == "function" then
-                                v[k2] = function() return end
+        if weapon:IsA("ModuleScript") then
+            local lname = weapon.Name:lower()
+            if lname:find("recoil") or lname:find("shake") then
+                local success, module = pcall(require, weapon)
+                if success and typeof(module) == "table" then
+                    for k, v in pairs(module) do
+                        if typeof(v) == "function" then
+                            module[k] = function(...) return end
+                        elseif typeof(v) == "table" then
+                            for k2, v2 in pairs(v) do
+                                if typeof(v2) == "function" then
+                                    v[k2] = function(...) return end
+                                end
                             end
                         end
                     end
@@ -266,6 +280,7 @@ if noRecoilToggle() then
         end
     end
 end
+
 
 if aimbotToggle() then
     local target = nil
