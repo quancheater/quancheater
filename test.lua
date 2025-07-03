@@ -304,36 +304,35 @@ end
 
 if aimbotToggle() then
     local target, closestDist, lowestHP = nil, math.huge, math.huge
-    local maxDist, fov, predictTime = 150, 180, 0.14
+    local maxDist, fov = 150, 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     local function IsVisible(part)
-        local o = Camera.CFrame.Position
-        local d = part.Position - o
-        local p = RaycastParams.new()
-        p.FilterType = Enum.RaycastFilterType.Blacklist
-        p.FilterDescendantsInstances = {LP.Character}
-        local r = workspace:Raycast(o, d, p)
-        return not r or r.Instance:IsDescendantOf(part.Parent)
+        local origin = Camera.CFrame.Position
+        local direction = (part.Position - origin)
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Blacklist
+        params.FilterDescendantsInstances = {LP.Character}
+        local result = workspace:Raycast(origin, direction, params)
+        return not result or result.Instance:IsDescendantOf(part.Parent)
     end
 
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and p.Team ~= LP.Team and p.Character then
-            local h = p.Character:FindFirstChild("Head")
-            local r = p.Character:FindFirstChild("HumanoidRootPart")
-            local u = p.Character:FindFirstChild("Humanoid")
-            if h and r and u and u.Health > 0 and IsVisible(h) then
-                local predicted = h.Position + r.Velocity * predictTime
-                local dist3D = (predicted - Camera.CFrame.Position).Magnitude
+            local head = p.Character:FindFirstChild("Head")
+            local hum = p.Character:FindFirstChild("Humanoid")
+            if head and hum and hum.Health > 0 and IsVisible(head) then
+                local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
                 if dist3D <= maxDist then
-                    local sp, on = Camera:WorldToViewportPoint(predicted)
-                    local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-                    local dot = (predicted - Camera.CFrame.Position).Unit:Dot(Camera.CFrame.LookVector)
-                    if on and dot > 0 and dist2D <= fov then
-                        if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and u.Health < lowestHP) then
-                            target = predicted
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                    local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    local dir = (head.Position - Camera.CFrame.Position).Unit
+                    local dot = dir:Dot(Camera.CFrame.LookVector)
+                    if onScreen and dot > 0 and dist2D <= fov then
+                        if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and hum.Health < lowestHP) then
+                            target = head
                             closestDist = dist3D
-                            lowestHP = u.Health
+                            lowestHP = hum.Health
                         end
                     end
                 end
@@ -343,12 +342,15 @@ if aimbotToggle() then
 
     if target then
         local camPos = Camera.CFrame.Position
-        Camera.CFrame = CFrame.new(camPos, target)
+        local lookAt = target.Position
+        Camera.CFrame = CFrame.new(camPos, lookAt)
 
         local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
         if recoil then
             for _, v in ipairs(recoil:GetChildren()) do
-                if v:IsA("NumberValue") or v:IsA("Vector3Value") then v.Value = 0 end
+                if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                    v.Value = 0
+                end
             end
         end
 
@@ -364,9 +366,13 @@ if aimbotToggle() then
                     if s:IsA("ModuleScript") then
                         local m = require(s)
                         for k, v in pairs(m) do
-                            if typeof(v) == "function" then m[k] = function() end end
+                            if typeof(v) == "function" then
+                                m[k] = function() end
+                            end
                         end
-                    else s:Destroy() end
+                    else
+                        s:Destroy()
+                    end
                 end
             end
         end)
