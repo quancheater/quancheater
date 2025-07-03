@@ -180,88 +180,49 @@ RunService.RenderStepped:Connect(function()
 		LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
 	end
 
-local UIS = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
-local ItemPick = {}
-local pickedItems = {}
-local dragging = false
-local lastRefresh = 0
+local maxDistance = 60
 
-UIS.InputBegan:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
-end)
-UIS.InputEnded:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-
-RunService.RenderStepped:Connect(function(deltaTime)
-
-local MAX_DISTANCE = 60
-
-if not itemPickToggle() then
-	for _, v in pairs(ItemPick) do
-		if v.Remove then v:Remove() end
-	end
-	ItemPick = {}
-	return
-end
-
-lastRefresh += deltaTime
-if lastRefresh < 3 then return end
-lastRefresh = 0
-
--- Dọn rác
 for obj, txt in pairs(ItemPick) do
-	if not obj or not obj:IsDescendantOf(workspace) then
-		if txt.Remove then txt:Remove() end
+	if not obj:IsDescendantOf(workspace) then
+		txt:Remove()
 		ItemPick[obj] = nil
 	else
 		txt.Visible = false
 	end
 end
 
-local mousePos = UIS:GetMouseLocation()
-local localPos = Camera.CFrame.Position
-
-for _, o in ipairs(workspace:GetDescendants()) do
-	if (o:IsA("BasePart") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
-		local pos = o:IsA("Model") and (o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position) or o.Position
-		local distance = (pos - localPos).Magnitude
-		if distance > MAX_DISTANCE then
-			-- Nếu đã có thì clear luôn khỏi bảng
-			if ItemPick[o] then
-				if ItemPick[o].Remove then ItemPick[o]:Remove() end
-				ItemPick[o] = nil
+if itemPickToggle and itemPickToggle() then
+	for _, o in pairs(workspace:GetDescendants()) do
+		if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
+			local pos
+			if o:IsA("Model") then
+				pos = o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position
+			else
+				pos = o.Position
 			end
-			continue
-		end
 
-		local screen, onScreen = Camera:WorldToViewportPoint(pos)
+			local dist = (Camera.CFrame.Position - pos).Magnitude
+			if dist <= maxDistance then
+				if not ItemPick[o] then
+					local txt = Drawing.new("Text")
+					txt.Size = 13 txt.Color = Color3.fromRGB(0, 255, 255) txt.Center = true txt.Outline = true
+					ItemPick[o] = txt
+				end
 
-		if not ItemPick[o] then
-			local txt = Drawing.new("Text")
-			txt.Size = 13
-			txt.Color = Color3.fromRGB(0, 255, 255)
-			txt.Center = true
-			txt.Outline = true
-			ItemPick[o] = txt
-		end
-
-		local draw = ItemPick[o]
-		draw.Position = Vector2.new(screen.X, screen.Y)
-		draw.Text = "[Pick] " .. o.Name
-		draw.Visible = onScreen
-
-		if dragging and onScreen and (Vector2.new(screen.X, screen.Y) - mousePos).Magnitude < 25 then
-			local id = o:GetDebugId()
-			if not pickedItems[id] then
-				pickedItems[id] = true
-				appendfile("ItemsStored.txt", o:GetFullName() .. "\n")
+				local sp, on = Camera:WorldToViewportPoint(pos)
+				ItemPick[o].Position = Vector2.new(sp.X, sp.Y)
+				ItemPick[o].Text = "[Pick] " .. o.Name
+				ItemPick[o].Visible = on
+			else
+				-- Xoá nếu ngoài phạm vi
+				if ItemPick[o] then
+					ItemPick[o]:Remove()
+					ItemPick[o] = nil
+				end
 			end
 		end
 	end
-end
+
 
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
