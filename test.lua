@@ -274,32 +274,34 @@ if aimbotToggle() then
     local target = nil
     local minDist = math.huge
     local minHealth = math.huge
-    local maxAimDistance = 150
+    local maxAimDistance = 200
     local aimFovRadius = 180
     local predictionTime = 0.14
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Team ~= LP.Team and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("HumanoidRootPart") then
-            local head = p.Character.Head
-            local hrp = p.Character.HumanoidRootPart
+        if p ~= LP and p.Character then
+            local head = p.Character:FindFirstChild("Head")
+            local hrp = p.Character:FindFirstChild("HumanoidRootPart")
             local hum = p.Character:FindFirstChild("Humanoid")
 
-            if hum and hum.Health > 0 and hum.Health < math.huge then
-                local predictedHead = head.Position + hrp.Velocity * predictionTime
-                local distance3D = (predictedHead - Camera.CFrame.Position).Magnitude
+            if head and hrp and hum and hum.Health > 0 and hum.Health < math.huge then
+                if not (p.Team and LP.Team and p.Team == LP.Team) then
+                    local predicted = head.Position + hrp.Velocity * predictionTime
+                    local dist3D = (predicted - Camera.CFrame.Position).Magnitude
 
-                if distance3D <= maxAimDistance then
-                    local sp, onScreen = Camera:WorldToViewportPoint(predictedHead)
-                    local dir = (predictedHead - Camera.CFrame.Position).Unit
-                    local dot = dir:Dot(Camera.CFrame.LookVector)
-                    local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                    if dist3D <= maxAimDistance then
+                        local sp, onScreen = Camera:WorldToViewportPoint(predicted)
+                        local dir = (predicted - Camera.CFrame.Position).Unit
+                        local dot = dir:Dot(Camera.CFrame.LookVector)
+                        local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
 
-                    if onScreen and dot > 0 and dist2D < aimFovRadius then
-                        if dist2D < minDist or (math.abs(dist2D - minDist) < 1 and hum.Health < minHealth) then
-                            target = predictedHead
-                            minDist = dist2D
-                            minHealth = hum.Health
+                        if onScreen and dot > 0 and dist2D < aimFovRadius then
+                            if dist2D < minDist or (math.abs(dist2D - minDist) < 1 and hum.Health < minHealth) then
+                                target = predicted
+                                minDist = dist2D
+                                minHealth = hum.Health
+                            end
                         end
                     end
                 end
