@@ -276,34 +276,23 @@ if aimbotToggle() then
     if currentTarget and currentTarget.Parent and currentTarget.Parent:FindFirstChild("Humanoid") then
         local hum = currentTarget.Parent.Humanoid
         if hum.Health > 0 and hum.Health < math.huge then
-            local origin = Camera.CFrame.Position
-            local direction = (currentTarget.Position - origin).Unit * 999
-            local raycastParams = RaycastParams.new()
-            raycastParams.FilterDescendantsInstances = {LP.Character}
-            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-            local result = workspace:Raycast(origin, direction, raycastParams)
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, currentTarget.Position)
 
-            if result and result.Instance and not currentTarget:IsDescendantOf(result.Instance.Parent) then
-                currentTarget = nil
-            else
-                Camera.CFrame = CFrame.new(origin, currentTarget.Position)
+            local pos = Camera:WorldToViewportPoint(currentTarget.Position)
+            local line = Drawing.new("Line")
+            line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+            line.To = Vector2.new(pos.X, pos.Y)
+            line.Color = Color3.fromRGB(255, 80, 80)
+            line.Thickness = 2
+            line.Transparency = 1
+            line.Visible = true
+            task.delay(0.03, function() if line then line:Remove() end end)
 
-                local sp = Camera:WorldToViewportPoint(currentTarget.Position)
-                local line = Drawing.new("Line")
-                line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-                line.To = Vector2.new(sp.X, sp.Y)
-                line.Color = Color3.fromRGB(255, 80, 80)
-                line.Thickness = 2
-                line.Transparency = 1
-                line.Visible = true
-                task.delay(0.03, function() if line then line:Remove() end end)
-
-                local cam = workspace.CurrentCamera
-                if cam and cam:FindFirstChild("RecoilScript") then
-                    for _, v in ipairs(cam.RecoilScript:GetChildren()) do
-                        if v:IsA("NumberValue") or v:IsA("Vector3Value") then
-                            v.Value = 0
-                        end
+            local cam = workspace.CurrentCamera
+            if cam and cam:FindFirstChild("RecoilScript") then
+                for _, v in ipairs(cam.RecoilScript:GetChildren()) do
+                    if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                        v.Value = 0
                     end
                 end
             end
@@ -334,19 +323,11 @@ if aimbotToggle() then
                             local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
                             local dir = (head.Position - Camera.CFrame.Position).Unit
                             local dot = dir:Dot(Camera.CFrame.LookVector)
-
                             if on and dot > 0 and dist2D < max2D then
-                                local rayParams = RaycastParams.new()
-                                rayParams.FilterDescendantsInstances = {LP.Character}
-                                rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-                                local result = workspace:Raycast(Camera.CFrame.Position, (head.Position - Camera.CFrame.Position).Unit * 999, rayParams)
-
-                                if result and result.Instance and head:IsDescendantOf(result.Instance.Parent) then
-                                    if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and hum.Health < lowestHP) then
-                                        best = head
-                                        closestDist = dist3D
-                                        lowestHP = hum.Health
-                                    end
+                                if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and hum.Health < lowestHP) then
+                                    best = head
+                                    closestDist = dist3D
+                                    lowestHP = hum.Health
                                 end
                             end
                         end
