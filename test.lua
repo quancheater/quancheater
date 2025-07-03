@@ -221,8 +221,6 @@ if itemPickToggle and itemPickToggle() then
 				end
 			end
 		end
-	end
-
 
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
