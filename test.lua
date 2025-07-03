@@ -1,106 +1,121 @@
 -- Created By QuanCheaterVN
+
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "QuanCheaterUI"
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0, 130, 0, 32)
+toggleBtn.Size = UDim2.new(0, 140, 0, 40)
 toggleBtn.Position = UDim2.new(0, 20, 0, 60)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 toggleBtn.Text = "Toggle Menu"
-toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 170, 90)
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.TextSize = 14
+toggleBtn.AutoButtonColor = false
 toggleBtn.BorderSizePixel = 0
+toggleBtn.BackgroundTransparency = 0.1
+toggleBtn.ClipsDescendants = true
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 8)
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 320, 0, 460)
-frame.Position = UDim2.new(0, 20, 0, 100)
+frame.Position = UDim2.new(0, 20, 0, 110)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
 frame.Visible = true
 frame.Active = true
 frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
-toggleBtn.MouseButton1Click:Connect(function()
-	frame.Visible = not frame.Visible
-end)
+local shadow = Instance.new("ImageLabel", frame)
+shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+shadow.Size = UDim2.new(1, 60, 1, 60)
+shadow.ZIndex = -1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageTransparency = 0.6
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+shadow.BackgroundTransparency = 1
 
 local title = Instance.new("TextLabel", frame)
 title.Text = "QuanCheaterVN"
-title.Size = UDim2.new(1, 0, 0, 36)
-title.Font = Enum.Font.GothamBold
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Font = Enum.Font.GothamBlack
 title.TextSize = 20
-title.TextColor3 = Color3.new(1, 1, 1)
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.BackgroundTransparency = 1
-title.Position = UDim2.new(0, 0, 0, 0)
 
 local tabs = { "ESP", "Mem/S&F" }
 local tabFrames = {}
 
 for i, name in ipairs(tabs) do
-	local tabBtn = Instance.new("TextButton", frame)
-	tabBtn.Text = name
-	tabBtn.Size = UDim2.new(0, 150, 0, 28)
-	tabBtn.Position = UDim2.new(0, (i - 1) * 160 + 5, 0, 40)
-	tabBtn.Font = Enum.Font.Gotham
-	tabBtn.TextSize = 14
-	tabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-	tabBtn.TextColor3 = Color3.new(1, 1, 1)
-	tabBtn.BorderSizePixel = 0
+	local tb = Instance.new("TextButton", frame)
+	tb.Text = name
+	tb.Size = UDim2.new(0, 140, 0, 30)
+	tb.Position = UDim2.new(0, (i - 1) * 150 + 10, 0, 45)
+	tb.Font = Enum.Font.GothamBold
+	tb.TextSize = 14
+	tb.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	tb.TextColor3 = Color3.new(1, 1, 1)
+	tb.AutoButtonColor = false
+	tb.BorderSizePixel = 0
+	Instance.new("UICorner", tb).CornerRadius = UDim.new(0, 6)
 
-	local tabFrame = Instance.new("Frame", frame)
-	tabFrame.Size = UDim2.new(1, -20, 1, -80)
-	tabFrame.Position = UDim2.new(0, 10, 0, 80)
-	tabFrame.Visible = false
-	tabFrame.BackgroundTransparency = 1
-	tabFrame.Name = name
+	tabFrames[name] = Instance.new("Frame", frame)
+	tabFrames[name].Size = UDim2.new(1, -20, 1, -90)
+	tabFrames[name].Position = UDim2.new(0, 10, 0, 85)
+	tabFrames[name].Visible = false
+	tabFrames[name].BackgroundTransparency = 1
 
-	tabFrames[name] = tabFrame
-
-	tabBtn.MouseButton1Click:Connect(function()
+	tb.MouseButton1Click:Connect(function()
 		for _, f in pairs(tabFrames) do f.Visible = false end
-		tabFrame.Visible = true
+		tabFrames[name].Visible = true
 	end)
 end
 
 tabFrames["ESP"].Visible = true
 
-local function addToggle(parent, name, order)
+local function addToggle(parent, name, y)
 	local state = false
-	local y = (order - 1) * 35
 	local btn = Instance.new("TextButton", parent)
-	btn.Text = name .. ": OFF"
-	btn.Size = UDim2.new(1, 0, 0, 30)
-	btn.Position = UDim2.new(0, 0, 0, y)
+	btn.Text = "OFF - " .. name
+	btn.Size = UDim2.new(0, 280, 0, 30)
+	btn.Position = UDim2.new(0, 10, 0, y)
 	btn.Font = Enum.Font.Gotham
 	btn.TextSize = 14
 	btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 	btn.TextColor3 = Color3.new(1, 1, 1)
 	btn.BorderSizePixel = 0
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
 
 	btn.MouseButton1Click:Connect(function()
 		state = not state
-		btn.Text = name .. ": " .. (state and "ON" or "OFF")
+		btn.Text = (state and "ON - " or "OFF - ") .. name
 	end)
 
-	btn.Parent = parent
 	return function() return state end
 end
 
-local espToggle         = addToggle(tabFrames["ESP"], "ESP Master",       1)
-local highDamageToggle  = addToggle(tabFrames["ESP"], "High Damage",      2)
-local magicBulletToggle = addToggle(tabFrames["ESP"], "Magic Bullet",     3)
-local noRecoilToggle    = addToggle(tabFrames["ESP"], "No Recoil",        4)
-local mobToggle         = addToggle(tabFrames["ESP"], "Mob ESP",          5)
-local itemPickToggle    = addToggle(tabFrames["ESP"], "Item Pick ESP",    6)
-local aimbotToggle      = addToggle(tabFrames["ESP"], "Aimbot Lock",      7)
+local espToggle = addToggle(tabFrames["ESP"], "ESP Master", 10)
+local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 50)
+local noRecoilToggle = addToggle(tabFrames["ESP"], "No Recoil", 90)
+local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
+local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
 
-local speedToggle       = addToggle(tabFrames["Mem/S&F"], "Speed Hack",   1)
-local flyToggle         = addToggle(tabFrames["Mem/S&F"], "Fly",          2)
+local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
+local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
+
+toggleBtn.MouseButton1Click:Connect(function()
+	frame.Visible = not frame.Visible
+end)
 
 local ESPdata, Items, ItemPick = {}, {}, {}
 local skeletonLines = { {1,2},{2,3},{3,4},{4,5},{2,6},{6,7},{3,8},{8,9},{3,10},{10,11} }
@@ -204,37 +219,6 @@ if itemPickToggle() then
 else
 	for _, txt in pairs(ItemPick) do
 		txt.Visible = false
-	end
-end
-
-if highDamageToggle() then
-	for _, p in pairs(Players:GetPlayers()) do
-		if p ~= LP and p.Character and p.Character:FindFirstChild("Head") then
-			local head = p.Character.Head
-			for _, part in pairs(p.Character:GetChildren()) do
-				if part:IsA("BasePart") and part.Name ~= "Head" then
-					part.Size = Vector3.new(0.1, 0.1, 0.1)
-					part.CanCollide = false
-					part.Transparency = 1
-					part.CFrame = head.CFrame
-				end
-			end
-		end
-	end
-end
-if magicBulletToggle() then
-	for _, bullet in pairs(workspace:GetDescendants()) do
-		if bullet:IsA("BasePart") and bullet.Name:lower():find("bullet") then
-			for _, enemy in pairs(Players:GetPlayers()) do
-				if enemy ~= LP and enemy.Character and enemy.Character:FindFirstChild("Head") then
-					local head = enemy.Character.Head
-					local direction = (head.Position - bullet.Position).Unit
-					bullet.Velocity = direction * 3000
-					bullet.CFrame = CFrame.lookAt(bullet.Position, head.Position)
-					break -- Chỉ chọn 1 enemy gần nhất
-				end
-			end
-		end
 	end
 end
 
