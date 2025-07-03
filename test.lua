@@ -270,76 +270,63 @@ if noRecoilToggle() then
 end
 
 
-local currentTarget = nil
-
 if aimbotToggle() then
-    if currentTarget and currentTarget.Parent and currentTarget.Parent:FindFirstChild("Humanoid") then
-        local hum = currentTarget.Parent.Humanoid
-        if hum.Health > 0 and hum.Health < math.huge then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, currentTarget.Position)
+    local bestTarget = nil
+    local lowestHP = math.huge
+    local closestDist = math.huge
+    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local max3D = 150
+    local max2D = 180
 
-            local pos = Camera:WorldToViewportPoint(currentTarget.Position)
-            local line = Drawing.new("Line")
-            line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-            line.To = Vector2.new(pos.X, pos.Y)
-            line.Color = Color3.fromRGB(255, 80, 80)
-            line.Thickness = 2
-            line.Transparency = 1
-            line.Visible = true
-            task.delay(0.03, function() if line then line:Remove() end end)
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") then
+            if not (p.Team and LP.Team and p.Team == LP.Team) then
+                local head = p.Character.Head
+                local hum = p.Character.Humanoid
 
-            local cam = workspace.CurrentCamera
-            if cam and cam:FindFirstChild("RecoilScript") then
-                for _, v in ipairs(cam.RecoilScript:GetChildren()) do
-                    if v:IsA("NumberValue") or v:IsA("Vector3Value") then
-                        v.Value = 0
-                    end
-                end
-            end
-        else
-            currentTarget = nil
-        end
-    else
-        currentTarget = nil
-    end
+                if hum.Health > 0 and hum.Health < math.huge then
+                    local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
+                    if dist3D <= max3D then
+                        local sp, onScreen = Camera:WorldToViewportPoint(head.Position)
+                        local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                        local dir = (head.Position - Camera.CFrame.Position).Unit
+                        local dot = dir:Dot(Camera.CFrame.LookVector)
 
-    if not currentTarget then
-        local best = nil
-        local lowestHP = math.huge
-        local closestDist = math.huge
-        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-        local max3D = 150
-        local max2D = 180
-
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LP and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") then
-                if not (p.Team and LP.Team and p.Team == LP.Team) then
-                    local head = p.Character.Head
-                    local hum = p.Character.Humanoid
-                    if hum.Health > 0 and hum.Health < math.huge then
-                        local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
-                        if dist3D <= max3D then
-                            local sp, on = Camera:WorldToViewportPoint(head.Position)
-                            local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-                            local dir = (head.Position - Camera.CFrame.Position).Unit
-                            local dot = dir:Dot(Camera.CFrame.LookVector)
-                            if on and dot > 0 and dist2D < max2D then
-                                if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and hum.Health < lowestHP) then
-                                    best = head
-                                    closestDist = dist3D
-                                    lowestHP = hum.Health
-                                end
+                        if onScreen and dot > 0 and dist2D < max2D then
+                            if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and hum.Health < lowestHP) then
+                                bestTarget = head
+                                closestDist = dist3D
+                                lowestHP = hum.Health
                             end
                         end
                     end
                 end
             end
         end
-
-        currentTarget = best
     end
-else
-    currentTarget = nil
+
+    if bestTarget then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, bestTarget.Position)
+
+        local pos = Camera:WorldToViewportPoint(bestTarget.Position)
+        local line = Drawing.new("Line")
+        line.From = center
+        line.To = Vector2.new(pos.X, pos.Y)
+        line.Color = Color3.fromRGB(255, 80, 80)
+        line.Thickness = 2
+        line.Transparency = 1
+        line.Visible = true
+        task.delay(0.03, function() if line then line:Remove() end end)
+
+        local cam = workspace.CurrentCamera
+        if cam and cam:FindFirstChild("RecoilScript") then
+            for _, v in ipairs(cam.RecoilScript:GetChildren()) do
+                if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                    v.Value = 0
+                end
+            end
+        end
+    end
 end
 
 if espToggle() or mobToggle() then
