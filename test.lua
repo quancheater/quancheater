@@ -188,6 +188,21 @@ for obj, txt in pairs(ItemPick) do
 	end
 end
 
+
+local function IsVisible(part)
+    local origin = Camera.CFrame.Position
+    local targetPosition = part.Position
+    local direction = targetPosition - origin
+
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LP.Character}
+
+    local result = workspace:Raycast(origin, direction, raycastParams)
+    
+    return not result or result.Instance:IsDescendantOf(part.Parent)
+end
+
 if itemPickToggle() then
 	for _, o in pairs(workspace:GetDescendants()) do
 		if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
@@ -270,6 +285,7 @@ if noRecoilToggle() then
 end
 
 
+
 if aimbotToggle() then
     local target = nil
     local closestDist = math.huge
@@ -277,11 +293,21 @@ if aimbotToggle() then
     local fov = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
+    local function IsVisible(part)
+        local origin = Camera.CFrame.Position
+        local direction = (part.Position - origin)
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Blacklist
+        params.FilterDescendantsInstances = {LP.Character}
+        local result = workspace:Raycast(origin, direction, params)
+        return not result or result.Instance:IsDescendantOf(part.Parent)
+    end
+
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and p.Team ~= LP.Team and p.Character then
             local head = p.Character:FindFirstChild("Head")
             local hum = p.Character:FindFirstChild("Humanoid")
-            if head and hum and hum.Health > 0 then
+            if head and hum and hum.Health > 0 and IsVisible(head) then
                 local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
                 if dist3D <= maxDist then
                     local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
@@ -339,6 +365,16 @@ pcall(function()
     end
 end)
 
+local function IsVisible(part)
+    local origin = Camera.CFrame.Position
+    local direction = (part.Position - origin)
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = {LP.Character}
+    local result = workspace:Raycast(origin, direction, params)
+    return not result or result.Instance:IsDescendantOf(part.Parent)
+end
+
 if espToggle() or mobToggle() then
     playerESPCount = 0
     mobESPCount = 0
@@ -395,23 +431,30 @@ if espToggle() or mobToggle() then
         if toggleCheck and onScreen and dot > 0 then
             if not ESPdata[target] then initESP(target) end
             local ed = ESPdata[target]
+            local visible = IsVisible(hrp)
+            local color = visible and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+
             local sy = math.clamp(2000 / distance, 30, 200)
             local sx = sy / 2
 
             ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
             ed.box.Size = Vector2.new(sx, sy)
+            ed.box.Color = color
             ed.box.Visible = true
 
             ed.line.From = topCenter
             ed.line.To = Vector2.new(sp.X, sp.Y)
+            ed.line.Color = color
             ed.line.Visible = true
 
             ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
             ed.name.Text = target.Name
+            ed.name.Color = color
             ed.name.Visible = true
 
             ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
             ed.hp.Text = "HP: " .. math.floor(hum.Health)
+            ed.hp.Color = color
             ed.hp.Visible = true
 
             if not ed.dist then
@@ -433,6 +476,7 @@ if espToggle() or mobToggle() then
                     if a and b then
                         sl.From = a
                         sl.To = b
+                        sl.Color = color
                         sl.Visible = true
                     else
                         sl.Visible = false
