@@ -104,16 +104,14 @@ local function addToggle(parent, name, y)
 	return function() return state end
 end
 
-local espToggle       = addToggle(tabFrames["ESP"], "ESP Master",     10)
-local mobToggle       = addToggle(tabFrames["ESP"], "Mob ESP",        50)
-local noRecoilToggle  = addToggle(tabFrames["ESP"], "No Recoil",      90)
-local itemPickToggle  = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
-local itemEspToggle   = addToggle(tabFrames["ESP"], "Item ESP Obj",  170)
-local aimbotToggle    = addToggle(tabFrames["ESP"], "Aimbot Lock",   210)
-
-
-local speedToggle     = addToggle(tabFrames["Mem/S&F"], "Speed Hack",  10)
-local flyToggle       = addToggle(tabFrames["Mem/S&F"], "Fly",         50)
+local espToggle = addToggle(tabFrames["ESP"], "ESP Master", 10)
+local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 50)
+local noRecoilToggle = addToggle(tabFrames["ESP"], "No Recoil", 90)
+local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
+local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
+local itemEspToggle = addToggle(tabFrames["ESP"], "item esp obj", 170)
+local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
+local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
 
 toggleBtn.MouseButton1Click:Connect(function()
 	frame.Visible = not frame.Visible
