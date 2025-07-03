@@ -121,16 +121,6 @@ local playerESPCount = 0
 local mobESPCount = 0
 local maxESPDistance = 450
 
-if not counter then
-    counter = Drawing.new("Text")
-    counter.Size = 22
-    counter.Center = true
-    counter.Outline = true
-    counter.Font = 2
-    counter.Color = Color3.fromRGB(255, 255, 0)
-    counter.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, 30)
-end
-
 
 local ESPdata, Items, ItemPick = {}, {}, {}
 local skeletonLines = { {1,2},{2,3},{3,4},{4,5},{2,6},{6,7},{3,8},{8,9},{3,10},{10,11} }
