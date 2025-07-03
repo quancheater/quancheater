@@ -109,7 +109,7 @@ local mobToggle = addToggle(tabFrames["ESP"], "Mob ESP", 50)
 local noRecoilToggle = addToggle(tabFrames["ESP"], "No Recoil", 90)
 local itemPickToggle = addToggle(tabFrames["ESP"], "Item Pick ESP", 130)
 local aimbotToggle = addToggle(tabFrames["ESP"], "Aimbot Lock", 170)
-local itemEspToggle = addToggle(tabFrames["ESP"], "item esp obj", 170)
+local itemEspToggle = addToggle(tabFrames["ESP"], "item esp obj", 210)
 local speedToggle = addToggle(tabFrames["Mem/S&F"], "Speed Hack", 10)
 local flyToggle = addToggle(tabFrames["Mem/S&F"], "Fly", 50)
 
@@ -188,22 +188,6 @@ for obj, txt in pairs(ItemPick) do
 	end
 end
 
-
-local function IsVisible(part)
-    local origin = Camera.CFrame.Position
-    local targetPosition = part.Position
-    local direction = targetPosition - origin
-
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {LP.Character}
-
-    local result = workspace:Raycast(origin, direction, raycastParams)
-    
-    return not result or result.Instance:IsDescendantOf(part.Parent)
-end
-
-
 if itemEspToggle() then
     if not ItemESP then ItemESP = {} end
 
@@ -217,31 +201,29 @@ if itemEspToggle() then
     end
 
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            if obj.Name ~= "" and obj.Transparency < 1 then
-                if not obj:IsDescendantOf(LP.Character) and not obj:IsDescendantOf(workspace.Ignore) then
-                    local distance = (obj.Position - Camera.CFrame.Position).Magnitude
-                    if distance <= maxESPDistance then
-                        local screenPos, onScreen = Camera:WorldToViewportPoint(obj.Position)
-                        if onScreen then
-                            if not ItemESP[obj] then
-                                local text = Drawing.new("Text")
-                                text.Size = 16
-                                text.Center = true
-                                text.Outline = true
-                                text.Color = Color3.fromRGB(255, 255, 0)
-                                ItemESP[obj] = text
-                            end
-                            local text = ItemESP[obj]
-                            text.Text = obj.Name .. " [" .. math.floor(distance) .. "m]"
-                            text.Position = Vector2.new(screenPos.X, screenPos.Y)
-                            text.Visible = true
-                        elseif ItemESP[obj] then
-                            ItemESP[obj].Visible = false
+        if obj:IsA("BasePart") and obj.Name ~= "" and obj.Transparency < 1 then
+            if not obj:IsDescendantOf(LP.Character) and not obj:IsDescendantOf(workspace.Ignore) then
+                local distance = (obj.Position - Camera.CFrame.Position).Magnitude
+                if distance <= maxESPDistance then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(obj.Position)
+                    if onScreen then
+                        if not ItemESP[obj] then
+                            local text = Drawing.new("Text")
+                            text.Size = 16
+                            text.Center = true
+                            text.Outline = true
+                            text.Color = Color3.fromRGB(255, 255, 0)
+                            ItemESP[obj] = text
                         end
+                        local text = ItemESP[obj]
+                        text.Text = obj.Name .. " [" .. math.floor(distance) .. "m]"
+                        text.Position = Vector2.new(screenPos.X, screenPos.Y)
+                        text.Visible = true
                     elseif ItemESP[obj] then
                         ItemESP[obj].Visible = false
                     end
+                elseif ItemESP[obj] then
+                    ItemESP[obj].Visible = false
                 end
             end
         end
@@ -258,53 +240,85 @@ else
 end
 
 if itemPickToggle() then
-	for _, o in pairs(workspace:GetDescendants()) do
-		if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
-			local pos
+    if not ItemPick then ItemPick = {} end
 
-			if o:IsA("Model") then
-				if not o.PrimaryPart then
-					local primary = o:FindFirstChild("HumanoidRootPart") or o:FindFirstChildWhichIsA("BasePart")
-					if primary then
-						pcall(function() o.PrimaryPart = primary end)
-					end
-				end
-				if o.PrimaryPart then
-					pos = o.PrimaryPart.Position
-				else
-					local success
-					success, pos = pcall(function() return o:GetPivot().Position end)
-					if not success then continue end
-				end
-			else
-				pos = o.Position
-			end
+    for obj, txt in pairs(ItemPick) do
+        if not obj or not obj.Parent then
+            if txt and txt.Remove then
+                txt:Remove()
+            end
+            ItemPick[obj] = nil
+        end
+    end
 
-			local sp, onScreen = Camera:WorldToViewportPoint(pos)
-			local dir = (pos - Camera.CFrame.Position).Unit
-			local inFront = dir:Dot(Camera.CFrame.LookVector) > 0
+    for _, o in pairs(workspace:GetDescendants()) do
+        if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
+            local pos
 
-			if not ItemPick[o] then
-				local txt = Drawing.new("Text")
-				txt.Size = 13
-				txt.Color = Color3.fromRGB(0, 255, 255)
-				txt.Center = true
-				txt.Outline = true
-				txt.Visible = false
-				ItemPick[o] = txt
-			end
+            if o:IsA("Model") then
+                if not o.PrimaryPart then
+                    local primary = o:FindFirstChild("HumanoidRootPart") or o:FindFirstChildWhichIsA("BasePart")
+                    if primary then
+                        pcall(function() o.PrimaryPart = primary end)
+                    end
+                end
+                if o.PrimaryPart then
+                    pos = o.PrimaryPart.Position
+                else
+                    local success
+                    success, pos = pcall(function() return o:GetPivot().Position end)
+                    if not success then continue end
+                end
+            else
+                pos = o.Position
+            end
 
-			local draw = ItemPick[o]
-			draw.Position = Vector2.new(sp.X, sp.Y)
-			draw.Text = "[Pick] " .. o.Name
-			draw.Visible = onScreen and inFront
-		end
-	end
+            local sp, onScreen = Camera:WorldToViewportPoint(pos)
+            local dir = (pos - Camera.CFrame.Position).Unit
+            local inFront = dir:Dot(Camera.CFrame.LookVector) > 0
+
+            if not ItemPick[o] then
+                local txt = Drawing.new("Text")
+                txt.Size = 13
+                txt.Color = Color3.fromRGB(0, 255, 255)
+                txt.Center = true
+                txt.Outline = true
+                txt.Visible = false
+                ItemPick[o] = txt
+            end
+
+            local draw = ItemPick[o]
+            draw.Text = "[Pick] " .. o.Name
+            draw.Position = Vector2.new(sp.X, sp.Y)
+            draw.Visible = onScreen and inFront
+        end
+    end
 else
-	for _, txt in pairs(ItemPick) do
-		txt.Visible = false
-	end
+    if ItemPick then
+        for obj, txt in pairs(ItemPick) do
+            if txt and txt.Remove then
+                txt:Remove()
+            end
+        end
+        ItemPick = {}
+    end
 end
+
+
+local function IsVisible(part)
+    local origin = Camera.CFrame.Position
+    local targetPosition = part.Position
+    local direction = targetPosition - origin
+
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LP.Character}
+
+    local result = workspace:Raycast(origin, direction, raycastParams)
+    
+    return not result or result.Instance:IsDescendantOf(part.Parent)
+end
+
 
 if noRecoilToggle() then
 	local cam = workspace.CurrentCamera
