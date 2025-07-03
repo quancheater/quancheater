@@ -302,54 +302,54 @@ end
 
 
 
-local ShootFunc = game:GetService("ReplicatedStorage"):WaitForChild("Function"):WaitForChild("Gameplay"):WaitForChild("Shoot")
-local oldInvoke = ShootFunc.InvokeServer
+if aimbotToggle() then
+    local target, closestDist = nil, math.huge
+    local maxDist, fov = 150, 180
+    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-ShootFunc.InvokeServer = function(self, ...)
-    if aimbotToggle() then
-        local cam = workspace.CurrentCamera
-        local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
-        local target, minDist, lowHp = nil, math.huge, math.huge
+    local function IsVisible(part)
+        local origin = Camera.CFrame.Position
+        local direction = part.Position - origin
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Blacklist
+        params.FilterDescendantsInstances = {LP.Character}
+        local result = workspace:Raycast(origin, direction, params)
+        return not result or result.Instance:IsDescendantOf(part.Parent)
+    end
 
-        local function IsVisible(p)
-            local o = cam.CFrame.Position
-            local d = (p.Position - o)
-            local r = RaycastParams.new()
-            r.FilterType = Enum.RaycastFilterType.Blacklist
-            r.FilterDescendantsInstances = {LP.Character}
-            local hit = workspace:Raycast(o, d, r)
-            return not hit or hit.Instance:IsDescendantOf(p.Parent)
-        end
-
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LP and p.Team ~= LP.Team and p.Character then
-                local h = p.Character:FindFirstChild("Head")
-                local r = p.Character:FindFirstChild("HumanoidRootPart")
-                local u = p.Character:FindFirstChild("Humanoid")
-                if h and r and u and u.Health > 0 and IsVisible(h) then
-                    local pos = h.Position + r.Velocity * 0.12
-                    local dist = (pos - cam.CFrame.Position).Magnitude
-                    if dist <= 150 then
-                        local s, on = cam:WorldToViewportPoint(pos)
-                        local d2d = (Vector2.new(s.X, s.Y) - center).Magnitude
-                        if on and d2d <= 180 then
-                            if dist < minDist or (math.abs(dist - minDist) < 1 and u.Health < lowHp) then
-                                target, minDist, lowHp = pos, dist, u.Health
-                            end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Team ~= LP.Team and p.Character then
+            local head = p.Character:FindFirstChild("Head")
+            local hum = p.Character:FindFirstChild("Humanoid")
+            if head and hum and hum.Health > 0 and IsVisible(head) then
+                local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
+                if dist3D <= maxDist then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                    local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    local dir = (head.Position - Camera.CFrame.Position).Unit
+                    local dot = dir:Dot(Camera.CFrame.LookVector)
+                    if onScreen and dot > 0 and dist2D <= fov then
+                        if dist3D < closestDist then
+                            target = head
+                            closestDist = dist3D
                         end
                     end
                 end
             end
         end
+    end
 
-        if target then
-            cam.CFrame = CFrame.new(cam.CFrame.Position, target)
-            local recoil = cam:FindFirstChild("RecoilScript")
-            if recoil then
-                for _, v in ipairs(recoil:GetChildren()) do
-                    if v:IsA("NumberValue") or v:IsA("Vector3Value") then v.Value = 0 end
+    if target then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
+        if recoil then
+            for _, v in ipairs(recoil:GetChildren()) do
+                if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                    v.Value = 0
                 end
             end
+        end
+        pcall(function()
             for _, s in ipairs({
                 LP.PlayerScripts:FindFirstChild("GunRecoil"),
                 LP.PlayerScripts:FindFirstChild("Recoil"),
@@ -360,16 +360,44 @@ ShootFunc.InvokeServer = function(self, ...)
                 if s then
                     if s:IsA("ModuleScript") then
                         local m = require(s)
-                        for k,v in pairs(m) do if typeof(v) == "function" then m[k] = function() end end end
+                        for k, v in pairs(m) do
+                            if typeof(v) == "function" then m[k] = function() end end
+                        end
                     else
                         s:Destroy()
                     end
                 end
             end
-        end
-    end
+        end)
 
-    return oldInvoke(self, ...)
+        local args = {
+            CFrame.new(Camera.CFrame.Position, target.Position),
+            6,
+            1,
+            1,
+            tick(),
+            {
+                {
+                    instance = target,
+                    finalPosition = target.Position,
+                    normal = Vector3.new(0, 1, 0),
+                    bulletDirection = (target.Position - Camera.CFrame.Position).Unit
+                }
+            },
+            tick(),
+            Rect.new(Vector2.new(-1, -1), Vector2.new(1, 1)),
+            {
+                {
+                    position = target.Position
+                }
+            },
+            ReplicatedStorage:WaitForChild("Weapons"):FindFirstChildOfClass("Folder"):FindFirstChild("Sounds"):FindFirstChild("Shoot"),
+            ReplicatedStorage:WaitForChild("Weapons"):FindFirstChildOfClass("Folder"):FindFirstChild("Fxs"):FindFirstChild("MuzzleFlash_3p"),
+            LP.Character:WaitForChild("CurrentWeaponAccessoryRightHand"):WaitForChild("Handle"):WaitForChild("muzzle"):WaitForChild("Attachment")
+        }
+
+        ReplicatedStorage:WaitForChild("Function"):WaitForChild("Gameplay"):WaitForChild("Shoot"):InvokeServer(unpack(args))
+    end
 end
 
 local function IsVisible(part)
