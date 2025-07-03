@@ -291,7 +291,6 @@ if espToggle() or mobToggle() then
     local alertMap = {}
     local alertRadius = 60
 
-    -- Ẩn toàn bộ trước
     for ent, ed in pairs(ESPdata) do
         ed.box.Visible = false
         ed.line.Visible = false
@@ -300,115 +299,109 @@ if espToggle() or mobToggle() then
         for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
     end
 
-    -- Vẽ player ESP
-    if espToggle() then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LP and p.Team ~= LP.Team and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
-                local hum = p.Character.Humanoid
-                local hrp = p.Character.HumanoidRootPart
-                local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Team ~= LP.Team and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+            local hum = p.Character.Humanoid
+            local hrp = p.Character.HumanoidRootPart
+            local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
 
-                if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
-                    local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-                    local dir = (hrp.Position - Camera.CFrame.Position).Unit
-                    local dot = dir:Dot(Camera.CFrame.LookVector)
+            if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                local dir = (hrp.Position - Camera.CFrame.Position).Unit
+                local dot = dir:Dot(Camera.CFrame.LookVector)
 
-                    if onScreen and dot > 0 then
-                        if not ESPdata[p] then initESP(p) end
-                        local ed = ESPdata[p]
-                        local sy = math.clamp(2000 / distance, 30, 200)
-                        local sx = sy / 2
+                if espToggle() and onScreen and dot > 0 then
+                    if not ESPdata[p] then initESP(p) end
+                    local ed = ESPdata[p]
+                    local sy = math.clamp(2000 / distance, 30, 200)
+                    local sx = sy / 2
 
-                        ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
-                        ed.box.Size = Vector2.new(sx, sy)
-                        ed.box.Visible = true
+                    ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
+                    ed.box.Size = Vector2.new(sx, sy)
+                    ed.box.Visible = true
 
-                        ed.line.From = topCenter
-                        ed.line.To = Vector2.new(sp.X, sp.Y)
-                        ed.line.Visible = true
+                    ed.line.From = topCenter
+                    ed.line.To = Vector2.new(sp.X, sp.Y)
+                    ed.line.Visible = true
 
-                        ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
-                        ed.name.Text = p.Name
-                        ed.name.Visible = true
+                    ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
+                    ed.name.Text = p.Name
+                    ed.name.Visible = true
 
-                        ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
-                        ed.hp.Text = "HP: " .. math.floor(hum.Health)
-                        ed.hp.Visible = true
+                    ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
+                    ed.hp.Text = "HP: " .. math.floor(hum.Health)
+                    ed.hp.Visible = true
 
-                        local joints = getJoints(p.Character)
-                        for i, pair in ipairs(skeletonLines) do
-                            local a, b = joints[pair[1]], joints[pair[2]]
-                            local sl = ed.skeleton[i]
-                            if a and b then
-                                sl.From = a
-                                sl.To = b
-                                sl.Visible = true
-                            else
-                                sl.Visible = false
-                            end
+                    local joints = getJoints(p.Character)
+                    for i, pair in ipairs(skeletonLines) do
+                        local a, b = joints[pair[1]], joints[pair[2]]
+                        local sl = ed.skeleton[i]
+                        if a and b then
+                            local a2d, aOn = Camera:WorldToViewportPoint(a)
+                            local b2d, bOn = Camera:WorldToViewportPoint(b)
+                            sl.From = Vector2.new(a2d.X, a2d.Y)
+                            sl.To = Vector2.new(b2d.X, b2d.Y)
+                            sl.Visible = aOn and bOn
+                        else
+                            sl.Visible = false
                         end
-                        playerESPCount += 1
-                    else
-                        local angle = math.atan2(dir.Z, dir.X)
-                        local rounded = math.floor(angle * 10) / 10
-                        alertMap[rounded] = true
                     end
+                    playerESPCount += 1
+                else
+                    local angle = math.atan2(dir.Z, dir.X)
+                    local rounded = math.floor(angle * 10) / 10
+                    alertMap[rounded] = true
                 end
             end
         end
     end
 
-    -- Vẽ mob ESP
-    if mobToggle() then
-        for _, mob in pairs(workspace:GetDescendants()) do
-            if mob:IsA("Model") and not Players:GetPlayerFromCharacter(mob) and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
-                local hum = mob.Humanoid
-                local hrp = mob.HumanoidRootPart
-                local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
+    for _, mob in pairs(workspace:GetDescendants()) do
+        if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(mob) then
+            local hum = mob.Humanoid
+            local hrp = mob.HumanoidRootPart
+            local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
 
-                if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
-                    local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-                    local dir = (hrp.Position - Camera.CFrame.Position).Unit
-                    local dot = dir:Dot(Camera.CFrame.LookVector)
+            if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                local dir = (hrp.Position - Camera.CFrame.Position).Unit
+                local dot = dir:Dot(Camera.CFrame.LookVector)
 
-                    if onScreen and dot > 0 then
-                        if not ESPdata[mob] then initESP(mob) end
-                        local ed = ESPdata[mob]
-                        local sy = math.clamp(2000 / distance, 30, 200)
-                        local sx = sy / 2
+                if mobToggle() and onScreen and dot > 0 then
+                    if not ESPdata[mob] then initESP(mob) end
+                    local ed = ESPdata[mob]
+                    local sy = math.clamp(2000 / distance, 30, 200)
+                    local sx = sy / 2
 
-                        ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
-                        ed.box.Size = Vector2.new(sx, sy)
-                        ed.box.Visible = true
+                    ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
+                    ed.box.Size = Vector2.new(sx, sy)
+                    ed.box.Visible = true
 
-                        ed.line.From = topCenter
-                        ed.line.To = Vector2.new(sp.X, sp.Y)
-                        ed.line.Visible = true
+                    ed.line.From = topCenter
+                    ed.line.To = Vector2.new(sp.X, sp.Y)
+                    ed.line.Visible = true
 
-                        ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
-                        ed.name.Text = mob.Name
-                        ed.name.Visible = true
+                    ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
+                    ed.name.Text = mob.Name
+                    ed.name.Visible = true
 
-                        ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
-                        ed.hp.Text = "HP: " .. math.floor(hum.Health)
-                        ed.hp.Visible = true
+                    ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
+                    ed.hp.Text = "HP: " .. math.floor(hum.Health)
+                    ed.hp.Visible = true
 
-                        for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
-                        mobESPCount += 1
-                    else
-                        local angle = math.atan2(dir.Z, dir.X)
-                        local rounded = math.floor(angle * 10) / 10
-                        alertMap[rounded] = true
-                    end
+                    for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+                    mobESPCount += 1
+                else
+                    local angle = math.atan2(dir.Z, dir.X)
+                    local rounded = math.floor(angle * 10) / 10
+                    alertMap[rounded] = true
                 end
             end
         end
     end
 
-    -- Tạo hoặc update TextLabel đếm
-    if not counter or not counter.Parent then
+    if not counter then
         counter = Instance.new("TextLabel")
-        counter.Name = "ESPCount"
         counter.Size = UDim2.new(0, 300, 0, 32)
         counter.AnchorPoint = Vector2.new(0.5, 0)
         counter.Position = UDim2.new(0.5, 0, 0, 22)
@@ -418,6 +411,7 @@ if espToggle() or mobToggle() then
         counter.TextStrokeTransparency = 0.3
         counter.Font = Enum.Font.GothamBold
         counter.TextSize = 22
+        counter.Name = "ESPCount"
         counter.ZIndex = 9999
         counter.Parent = game.CoreGui
     end
@@ -425,7 +419,6 @@ if espToggle() or mobToggle() then
     counter.Text = "ESP: " .. tostring(playerESPCount) .. " | MOB: " .. tostring(mobESPCount)
     counter.Visible = true
 
-    -- Alert dots
     for angle, _ in pairs(alertMap) do
         local dotPos = screenCenter + Vector2.new(math.cos(angle), math.sin(angle)) * alertRadius
         local dot = Drawing.new("Circle")
