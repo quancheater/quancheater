@@ -276,24 +276,28 @@ if aimbotToggle() then
     local minHealth = math.huge
     local maxAimDistance = 150
     local aimFovRadius = 180
+    local predictionTime = 0.14
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Team ~= LP.Team and p.Character then
-            local head = p.Character:FindFirstChild("Head")
+        if p ~= LP and p.Team ~= LP.Team and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("HumanoidRootPart") then
+            local head = p.Character.Head
+            local hrp = p.Character.HumanoidRootPart
             local hum = p.Character:FindFirstChild("Humanoid")
 
-            if head and hum and hum.Health > 0 and hum.Health < math.huge then
-                local distance3D = (head.Position - Camera.CFrame.Position).Magnitude
+            if hum and hum.Health > 0 and hum.Health < math.huge then
+                local predictedHead = head.Position + hrp.Velocity * predictionTime
+                local distance3D = (predictedHead - Camera.CFrame.Position).Magnitude
+
                 if distance3D <= maxAimDistance then
-                    local sp, on = Camera:WorldToViewportPoint(head.Position)
-                    local dir = (head.Position - Camera.CFrame.Position).Unit
+                    local sp, onScreen = Camera:WorldToViewportPoint(predictedHead)
+                    local dir = (predictedHead - Camera.CFrame.Position).Unit
                     local dot = dir:Dot(Camera.CFrame.LookVector)
                     local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
 
-                    if on and dot > 0 and dist2D < aimFovRadius then
+                    if onScreen and dot > 0 and dist2D < aimFovRadius then
                         if dist2D < minDist or (math.abs(dist2D - minDist) < 1 and hum.Health < minHealth) then
-                            target = head
+                            target = predictedHead
                             minDist = dist2D
                             minHealth = hum.Health
                         end
@@ -304,7 +308,16 @@ if aimbotToggle() then
     end
 
     if target then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target)
+
+        local cam = workspace.CurrentCamera
+        if cam and cam:FindFirstChild("RecoilScript") then
+            for _, v in ipairs(cam.RecoilScript:GetChildren()) do
+                if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                    v.Value = 0
+                end
+            end
+        end
     end
 end
 
