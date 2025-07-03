@@ -304,7 +304,7 @@ end
 
 if aimbotToggle() then
     local target, closestDist = nil, math.huge
-    local maxDist, fov = 150, 180
+    local maxDist, fov = 250, 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     local function IsVisible(part)
