@@ -303,36 +303,36 @@ end
 
 
 if aimbotToggle() then
-    local target, closestDist, lowestHP = nil, math.huge, math.huge
-    local maxDist, fov = 150, 180
+    local target, closestDist = nil, math.huge
+    local maxDist, fov, predictTime = 150, 180, 0.12
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     local function IsVisible(part)
-        local origin = Camera.CFrame.Position
-        local direction = part.Position - origin
-        local params = RaycastParams.new()
-        params.FilterType = Enum.RaycastFilterType.Blacklist
-        params.FilterDescendantsInstances = {LP.Character}
-        local result = workspace:Raycast(origin, direction, params)
-        return not result or result.Instance:IsDescendantOf(part.Parent)
+        local o = Camera.CFrame.Position
+        local d = part.Position - o
+        local p = RaycastParams.new()
+        p.FilterType = Enum.RaycastFilterType.Blacklist
+        p.FilterDescendantsInstances = {LP.Character}
+        local r = workspace:Raycast(o, d, p)
+        return not r or r.Instance:IsDescendantOf(part.Parent)
     end
 
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and p.Team ~= LP.Team and p.Character then
-            local head = p.Character:FindFirstChild("Head")
-            local hum = p.Character:FindFirstChild("Humanoid")
-            if head and hum and hum.Health > 0 and IsVisible(head) then
-                local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
+            local h = p.Character:FindFirstChild("Head")
+            local r = p.Character:FindFirstChild("HumanoidRootPart")
+            local u = p.Character:FindFirstChild("Humanoid")
+            if h and r and u and u.Health > 0 and IsVisible(h) then
+                local pred = h.Position + r.Velocity * predictTime
+                local dist3D = (pred - Camera.CFrame.Position).Magnitude
                 if dist3D <= maxDist then
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                    local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-                    local dir = (head.Position - Camera.CFrame.Position).Unit
-                    local dot = dir:Dot(Camera.CFrame.LookVector)
-                    if onScreen and dot > 0 and dist2D <= fov then
-                        if dist3D < closestDist or (math.abs(dist3D - closestDist) < 1 and hum.Health < lowestHP) then
-                            target = head
+                    local sp, on = Camera:WorldToViewportPoint(pred)
+                    local dist2D = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                    local dot = (pred - Camera.CFrame.Position).Unit:Dot(Camera.CFrame.LookVector)
+                    if on and dot > 0 and dist2D <= fov then
+                        if dist3D < closestDist then
+                            target = pred
                             closestDist = dist3D
-                            lowestHP = hum.Health
                         end
                     end
                 end
@@ -341,14 +341,21 @@ if aimbotToggle() then
     end
 
     if target then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        local args = {
+            CFrame.new(target),
+            6, 1, 1, tick(), {}, tick(),
+            Rect.new(Vector2.new(-1, -1), Vector2.new(1, 1)),
+            {{position = target}},
+            game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):WaitForChild("06_Garand"):WaitForChild("Sounds"):WaitForChild("Shoot"),
+            game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):WaitForChild("06_Garand"):WaitForChild("Fxs"):WaitForChild("MuzzleFlash_3p"),
+            LP.Character:WaitForChild("CurrentWeaponAccessoryRightHand"):WaitForChild("Handle"):WaitForChild("muzzle"):WaitForChild("Attachment")
+        }
+        game:GetService("ReplicatedStorage"):WaitForChild("Function"):WaitForChild("Gameplay"):WaitForChild("Shoot"):InvokeServer(unpack(args))
 
-        local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
-        if recoil then
-            for _, v in ipairs(recoil:GetChildren()) do
-                if v:IsA("NumberValue") or v:IsA("Vector3Value") then
-                    v.Value = 0
-                end
+        local r = workspace.CurrentCamera:FindFirstChild("RecoilScript")
+        if r then
+            for _, v in ipairs(r:GetChildren()) do
+                if v:IsA("NumberValue") or v:IsA("Vector3Value") then v.Value = 0 end
             end
         end
 
@@ -366,9 +373,7 @@ if aimbotToggle() then
                         for k, v in pairs(m) do
                             if typeof(v) == "function" then m[k] = function() end end
                         end
-                    else
-                        s:Destroy()
-                    end
+                    else s:Destroy() end
                 end
             end
         end)
