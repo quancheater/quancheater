@@ -117,6 +117,13 @@ toggleBtn.MouseButton1Click:Connect(function()
 	frame.Visible = not frame.Visible
 end)
 
+local playerESPCount = 0
+local mobESPCount = 0
+local counter = Drawing.new("Text")
+
+local maxESPDistance = 4250
+
+
 local ESPdata, Items, ItemPick = {}, {}, {}
 local skeletonLines = { {1,2},{2,3},{3,4},{4,5},{2,6},{6,7},{3,8},{8,9},{3,10},{10,11} }
 
