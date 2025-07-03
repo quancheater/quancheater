@@ -303,13 +303,15 @@ end
 
 
 if aimbotToggle() then
-    local target, closestDist = nil, math.huge
-    local maxDist, fov = 250, 180
+    local target = nil
+    local closestDist = math.huge
+    local maxDist = 250
+    local fov = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     local function IsVisible(part)
         local origin = Camera.CFrame.Position
-        local direction = part.Position - origin
+        local direction = (part.Position - origin)
         local params = RaycastParams.new()
         params.FilterType = Enum.RaycastFilterType.Blacklist
         params.FilterDescendantsInstances = {LP.Character}
@@ -340,12 +342,16 @@ if aimbotToggle() then
 
     if target then
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+
         local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
         if recoil then
             for _, v in ipairs(recoil:GetChildren()) do
-                if v:IsA("NumberValue") or v:IsA("Vector3Value") then v.Value = 0 end
+                if v:IsA("NumberValue") or v:IsA("Vector3Value") then
+                    v.Value = 0
+                end
             end
         end
+
         pcall(function()
             for _, s in ipairs({
                 LP.PlayerScripts:FindFirstChild("GunRecoil"),
