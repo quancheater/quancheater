@@ -272,7 +272,7 @@ end
 
 if aimbotToggle() then
     local target = nil
-    local closest3D = math.huge
+    local closestDist = math.huge
     local maxDist = 150
     local fov = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -282,17 +282,16 @@ if aimbotToggle() then
             local head = p.Character:FindFirstChild("Head")
             local hum = p.Character:FindFirstChild("Humanoid")
             if head and hum and hum.Health > 0 then
-                local pos3D = head.Position
-                local dist3D = (pos3D - Camera.CFrame.Position).Magnitude
+                local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
                 if dist3D <= maxDist then
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(pos3D)
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
                     local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-                    local dir = (pos3D - Camera.CFrame.Position).Unit
+                    local dir = (head.Position - Camera.CFrame.Position).Unit
                     local dot = dir:Dot(Camera.CFrame.LookVector)
                     if onScreen and dot > 0 and dist2D <= fov then
-                        if dist3D < closest3D then
+                        if dist3D < closestDist then
                             target = head
-                            closest3D = dist3D
+                            closestDist = dist3D
                         end
                     end
                 end
@@ -301,19 +300,30 @@ if aimbotToggle() then
     end
 
     if target then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        local camPos = Camera.CFrame.Position
+        local targetPos = target.Position
+        local currentDir = Camera.CFrame.LookVector
+        local desiredDir = (targetPos - camPos).Unit
+        local dot = currentDir:Dot(desiredDir)
+
+        if dot < 0.999 then
+            local fixedDir = currentDir:Lerp(desiredDir, 0.75)
+            Camera.CFrame = CFrame.new(camPos, camPos + fixedDir)
+        else
+            Camera.CFrame = CFrame.new(camPos, targetPos)
+        end
     end
 end
 
 pcall(function()
-    local list = {
+    local scripts = {
         LP.PlayerScripts:FindFirstChild("GunRecoil"),
         LP.PlayerScripts:FindFirstChild("Recoil"),
         LP.PlayerScripts:FindFirstChild("CameraShake"),
         LP.Character and LP.Character:FindFirstChild("Recoil"),
         LP.Character and LP.Character:FindFirstChild("CameraShakeScript")
     }
-    for _, s in ipairs(list) do
+    for _, s in ipairs(scripts) do
         if s then
             if s:IsA("ModuleScript") then
                 local m = require(s)
