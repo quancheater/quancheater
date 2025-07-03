@@ -229,20 +229,24 @@ else
 	end
 end
 
-  	if noRecoilToggle() then
-		local cam = workspace.CurrentCamera
-		if cam and cam:FindFirstChild("RecoilScript") then
-			local recoilScript = cam:FindFirstChild("RecoilScript")
-			for _, v in pairs(recoilScript:GetChildren()) do
-				if v:IsA("NumberValue") or v:IsA("Vector3Value") then
-					v.Value = 0
+if noRecoilToggle() then
+	local cam = workspace.CurrentCamera
+	if cam then
+		-- Xoá tất cả giá trị gây recoil
+		local recoilScript = cam:FindFirstChild("RecoilScript")
+		if recoilScript then
+			for _, v in pairs(recoilScript:GetDescendants()) do
+				if v:IsA("NumberValue") or v:IsA("Vector3Value") or v:IsA("CFrameValue") then
+					v.Value = typeof(v.Value) == "Vector3" and Vector3.zero or 0
 				end
 			end
 		end
-		if cam then
-			cam.CFrame = CFrame.new(cam.CFrame.Position, cam.CFrame.Position + cam.CFrame.LookVector)
-		end
+
+		-- Giữ nguyên hướng nhìn để chống shake
+		local lookDir = cam.CFrame.LookVector
+		cam.CFrame = CFrame.new(cam.CFrame.Position, cam.CFrame.Position + lookDir)
 	end
+end
 
 if aimbotToggle() then
     local target = nil
