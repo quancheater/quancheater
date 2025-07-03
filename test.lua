@@ -282,6 +282,7 @@ if aimbotToggle() then
     end
 end
 
+
 if espToggle() or mobToggle() then
     playerESPCount = 0
     mobESPCount = 0
@@ -400,23 +401,9 @@ if espToggle() or mobToggle() then
         end
     end
 
-    if not counter then
-        counter = Instance.new("TextLabel")
-        counter.Size = UDim2.new(0, 300, 0, 32)
-        counter.AnchorPoint = Vector2.new(0.5, 0)
-        counter.Position = UDim2.new(0.5, 0, 0, 22)
-        counter.BackgroundTransparency = 1
-        counter.TextColor3 = Color3.fromRGB(255, 255, 0)
-        counter.TextStrokeColor3 = Color3.new(0, 0, 0)
-        counter.TextStrokeTransparency = 0.3
-        counter.Font = Enum.Font.GothamBold
-        counter.TextSize = 22
-        counter.Name = "ESPCount"
-        counter.ZIndex = 9999
-        counter.Parent = game.CoreGui
-    end
-
+    
     counter.Text = "ESP: " .. tostring(playerESPCount) .. " | MOB: " .. tostring(mobESPCount)
+    counter.Position = Vector2.new(Camera.ViewportSize.X / 2, 20)
     counter.Visible = true
 
     for angle, _ in pairs(alertMap) do
@@ -430,9 +417,20 @@ if espToggle() or mobToggle() then
         task.delay(0.3, function() dot:Remove() end)
     end
 else
-    if counter then counter.Visible = false end
+    counter.Visible = false
 end
 
+Players.PlayerRemoving:Connect(function(p)
+	if ESPdata[p] then
+		for _, d in pairs(ESPdata[p]) do
+			if typeof(d) == "table" then
+				for _, l in pairs(d) do l:Remove() end
+			else
+				d:Remove()
+			end
+		end
+		ESPdata[p] = nil
+	end
 end)
 
 
