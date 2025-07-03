@@ -119,9 +119,17 @@ end)
 
 local playerESPCount = 0
 local mobESPCount = 0
-local counter = Drawing.new("Text")
-
 local maxESPDistance = 450
+
+if not counter then
+    counter = Drawing.new("Text")
+    counter.Size = 22
+    counter.Center = true
+    counter.Outline = true
+    counter.Font = 2
+    counter.Color = Color3.fromRGB(255, 255, 0)
+    counter.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, 30)
+end
 
 
 local ESPdata, Items, ItemPick = {}, {}, {}
@@ -233,29 +241,27 @@ if noRecoilToggle() then
 	local cam = workspace.CurrentCamera
 
 	if cam and cam:FindFirstChild("RecoilScript") then
-		local recoilScript = cam:FindFirstChild("RecoilScript")
-		for _, v in pairs(recoilScript:GetChildren()) do
+		for _, v in ipairs(cam.RecoilScript:GetChildren()) do
 			if v:IsA("NumberValue") or v:IsA("Vector3Value") then
 				v.Value = 0
 			end
 		end
 	end
 
-	if cam then
-		cam.CFrame = CFrame.new(cam.CFrame.Position, cam.CFrame.Position + cam.CFrame.LookVector)
-	end
-
 	for _, mod in ipairs(game:GetDescendants()) do
-		if mod:IsA("ModuleScript") and (mod.Name:lower():find("shaker") or mod.Name:lower():find("camerashake")) then
-			local success, result = pcall(function() return require(mod) end)
-			if success and typeof(result) == "table" then
-				for k, v in pairs(result) do
-					if typeof(v) == "function" then
-						result[k] = function() end
-					elseif typeof(v) == "table" then
-						for k2, v2 in pairs(v) do
-							if typeof(v2) == "function" then
-								v[k2] = function() end
+		if mod:IsA("ModuleScript") then
+			local lname = mod.Name:lower()
+			if lname:find("shake") or lname:find("recoil") or lname:find("cam") then
+				local succ, result = pcall(require, mod)
+				if succ and typeof(result) == "table" then
+					for k, v in pairs(result) do
+						if typeof(v) == "function" then
+							result[k] = function() return end
+						elseif typeof(v) == "table" then
+							for k2, v2 in pairs(v) do
+								if typeof(v2) == "function" then
+									v[k2] = function() return end
+								end
 							end
 						end
 					end
@@ -303,6 +309,7 @@ if aimbotToggle() then
     end
 end
 
+
 if espToggle() or mobToggle() then
     playerESPCount = 0
     mobESPCount = 0
@@ -347,7 +354,7 @@ if espToggle() or mobToggle() then
                         ed.line.Visible = true
 
                         ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
-                        ed.name.Text = p.Name
+                        ed.name.Text = p.Name .. " [" .. math.floor(distance) .. "m]"
                         ed.name.Visible = true
 
                         ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
@@ -403,7 +410,7 @@ if espToggle() or mobToggle() then
                     ed.line.Visible = true
 
                     ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
-                    ed.name.Text = mob.Name
+                    ed.name.Text = mob.Name .. " [" .. math.floor(distance) .. "m]"
                     ed.name.Visible = true
 
                     ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
@@ -419,22 +426,6 @@ if espToggle() or mobToggle() then
                 end
             end
         end
-    end
-
-    if not counter or not counter.Parent then
-        counter = Instance.new("TextLabel")
-        counter.Size = UDim2.new(0, 400, 0, 40)
-        counter.AnchorPoint = Vector2.new(0.5, 0)
-        counter.Position = UDim2.new(0.5, 0, 0, 8)
-        counter.BackgroundTransparency = 1
-        counter.TextColor3 = Color3.new(1, 1, 0)
-        counter.TextStrokeColor3 = Color3.new(0, 0, 0)
-        counter.TextStrokeTransparency = 0
-        counter.Font = Enum.Font.GothamBlack
-        counter.TextSize = 28
-        counter.Name = "ESPCount"
-        counter.ZIndex = 9999
-        counter.Parent = game.CoreGui
     end
 
     counter.Text = "ESP: " .. playerESPCount .. "  |  MOB: " .. mobESPCount
@@ -465,8 +456,6 @@ Players.PlayerRemoving:Connect(function(p)
         end
         ESPdata[p] = nil
     end
-end)
-
 end)
 
 
