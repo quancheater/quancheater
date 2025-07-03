@@ -4,19 +4,18 @@ local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 
 local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "QuanESP"
+gui.Name = "QuanESPMenu"
 
-local frame = Instance.new("Frame")
+local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 260, 0, 120)
 frame.Position = UDim2.new(0, 20, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
-frame.Parent = gui
 
 local title = Instance.new("TextLabel", frame)
-title.Text = "QuanCheaterVN - ESP"
+title.Text = "QuanCheaterVN"
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -24,6 +23,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 
 local toggles, ESPObjects, itemLogged = {}, {}, {}
+local maxItemDistance = 50
 
 local function makeToggle(name, y)
     local btn = Instance.new("TextButton", frame)
@@ -78,6 +78,13 @@ local function createESP(name, color)
     return d
 end
 
+local function safeLog(id, name)
+    if not itemLogged[id] then
+        itemLogged[id] = true
+        appendfile("ItemsLoaded.txt", name .. "\n")
+    end
+end
+
 local function updateItemESP()
     if not toggles["Item ESP"]() then
         for _, draw in pairs(ESPObjects) do if draw.Remove then draw:Remove() end end
@@ -93,28 +100,31 @@ local function updateItemESP()
     end
 
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Transparency < 1 and obj.Name ~= "" then
-            if not ESPObjects[obj] then
-                local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj:FindFirstChildWhichIsA("ClickDetector")
-                local text = createESP(obj.Name, prompt and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255))
-                ESPObjects[obj] = text
+        if obj:IsA("BasePart") and obj.Transparency < 1 and obj.Name ~= "" and not obj:IsDescendantOf(LP.Character) then
+            local dist = (Camera.CFrame.Position - obj.Position).Magnitude
+            if dist <= maxItemDistance then
+                if not ESPObjects[obj] then
+                    local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj:FindFirstChildWhichIsA("ClickDetector")
+                    local label = createESP(obj.Name, prompt and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255))
+                    ESPObjects[obj] = label
 
-                if not itemLogged[obj:GetFullName()] then
-                    itemLogged[obj:GetFullName()] = true
-                    appendfile("ItemsLoaded.txt", obj:GetFullName() .. "\n")
+                    local uniqueID = obj:GetDebugId()
+                    safeLog(uniqueID, obj:GetFullName())
                 end
-            end
 
-            local draw = ESPObjects[obj]
-            local pos, visible = Camera:WorldToViewportPoint(obj.Position)
-            if visible then
-                local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj:FindFirstChildWhichIsA("ClickDetector")
-                draw.Color = prompt and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255)
-                draw.Text = (prompt and "[Pick] " or "") .. obj.Name
-                draw.Position = Vector2.new(pos.X, pos.Y)
-                draw.Visible = true
-            else
-                draw.Visible = false
+                local draw = ESPObjects[obj]
+                local screen, visible = Camera:WorldToViewportPoint(obj.Position)
+                if visible then
+                    local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj:FindFirstChildWhichIsA("ClickDetector")
+                    draw.Color = prompt and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255)
+                    draw.Text = (prompt and "[Pick] " or "") .. obj.Name
+                    draw.Position = Vector2.new(screen.X, screen.Y)
+                    draw.Visible = true
+                else
+                    draw.Visible = false
+                end
+            elseif ESPObjects[obj] then
+                ESPObjects[obj].Visible = false
             end
         end
     end
