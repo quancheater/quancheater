@@ -330,17 +330,16 @@ local function IsVisible(part)
 end
 
 if espToggle() or mobToggle() then
+    playerESPCount = 0
+    mobESPCount = 0
+
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local topCenter = Vector2.new(screenCenter.X, 0)
     local alertMap = {}
     local alertRadius = 60
+    local somethingVisible = false
 
-    playerESPCount = 0
-    mobESPCount = 0
-
-    local visibleTargets = {} -- giữ danh sách các target có hiển thị
-
-    -- Xoá ESP các entity đã rời khỏi workspace hoặc chết
+    -- Dọn rác ESP
     for ent, ed in pairs(ESPdata) do
         if not ent or not ent:IsDescendantOf(workspace) or not ent:FindFirstChild("Humanoid") or ent.Humanoid.Health <= 0 then
             for _, v in pairs(ed) do
@@ -372,10 +371,10 @@ if espToggle() or mobToggle() then
         local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
         local dir = (hrp.Position - Camera.CFrame.Position).Unit
         local dot = dir:Dot(Camera.CFrame.LookVector)
-        if not onScreen or dot <= 0 then return end
 
-        -- Có hiển thị ESP phía trước
-        table.insert(visibleTargets, target)
+        if not onScreen or dot <= 0 then return end
+        somethingVisible = true
+
         if isPlayer then playerESPCount += 1 else mobESPCount += 1 end
 
         if not ESPdata[target] then initESP(target) end
@@ -436,24 +435,34 @@ if espToggle() or mobToggle() then
         end
     end
 
-    -- Quét Player
+    -- Quét Player (có phân biệt team)
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character:FindFirstChild("HumanoidRootPart") then
             if not (p.Team and LP.Team and p.Team == LP.Team) then
-                handleESP(p.Character, true)
+                local hum = p.Character.Humanoid
+                local hrp = p.Character.HumanoidRootPart
+                local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
+                if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                    handleESP(p.Character, true)
+                end
             end
         end
     end
 
-    -- Quét Mob
+    -- Quét MOB
     for _, mob in pairs(workspace:GetDescendants()) do
         if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
-            handleESP(mob, false)
+            local hum = mob.Humanoid
+            local hrp = mob.HumanoidRootPart
+            local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
+            if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                handleESP(mob, false)
+            end
         end
     end
 
-    -- Nếu không có gì đang hiện -> clear toàn bộ ESP
-    if #visibleTargets == 0 then
+    -- Nếu không có gì render → xoá hết
+    if not somethingVisible then
         for ent, ed in pairs(ESPdata) do
             for _, v in pairs(ed) do
                 if typeof(v) == "table" then
@@ -465,15 +474,14 @@ if espToggle() or mobToggle() then
         end
         ESPdata = {}
         if counter then counter.Visible = false end
-        return -- kết thúc nếu không có gì render
+        return
     end
 
-    -- Hiển thị số lượng ESP
     counter.Text = "ESP: " .. playerESPCount .. "  |  MOB: " .. mobESPCount
     counter.Visible = true
 
 else
-    -- ESP tắt -> dọn toàn bộ
+    -- ESP tắt hoàn toàn → xoá sạch
     for ent, ed in pairs(ESPdata) do
         for _, v in pairs(ed) do
             if typeof(v) == "table" then
