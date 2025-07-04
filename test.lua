@@ -180,36 +180,7 @@ RunService.RenderStepped:Connect(function()
 		LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
 	end
 
-	for obj, txt in pairs(ItemPick) do
-		if not obj:IsDescendantOf(workspace) then
-			txt:Remove()
-			ItemPick[obj] = nil
-		else
-			txt.Visible = false
-		end
-	end
 
-	if itemPickToggle() then
-		for _, o in pairs(workspace:GetDescendants()) do
-			if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
-				if not ItemPick[o] then
-					local txt = Drawing.new("Text")
-					txt.Size = 13 txt.Color = Color3.fromRGB(0, 255, 255) txt.Center = true txt.Outline = true
-					ItemPick[o] = txt
-				end
-				local pos
-				if o:IsA("Model") then
-					pos = o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position
-				else
-					pos = o.Position
-				end
-				local sp, on = Camera:WorldToViewportPoint(pos)
-				ItemPick[o].Position = Vector2.new(sp.X, sp.Y)
-				ItemPick[o].Text = "[Pick] " .. o.Name
-				ItemPick[o].Visible = on
-			end
-		end
-	end
 
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
@@ -258,7 +229,46 @@ if noRecoilToggle() then
 	end
 end
 
+local itemScanRadius = 100
 
+for obj, txt in pairs(ItemPick) do
+    if not obj:IsDescendantOf(workspace) then
+        txt:Remove()
+        ItemPick[obj] = nil
+    else
+        txt.Visible = false
+    end
+end
+
+if itemPickToggle() then
+    local camPos = Camera.CFrame.Position
+
+    for _, o in pairs(workspace:GetDescendants()) do
+        if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
+            local pos = o:IsA("Model") and (o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position) or o.Position
+            local dist = (pos - camPos).Magnitude
+            if dist <= itemScanRadius then
+                if not ItemPick[o] then
+                    local txt = Drawing.new("Text")
+                    txt.Size = 13
+                    txt.Color = Color3.fromRGB(0, 255, 255)
+                    txt.Center = true
+                    txt.Outline = true
+                    ItemPick[o] = txt
+                end
+
+                local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
+                ItemPick[o].Position = Vector2.new(screenPos.X, screenPos.Y)
+                ItemPick[o].Text = "[Pick] " .. (o.Name or "Item")
+                ItemPick[o].Visible = onScreen
+            else
+                if ItemPick[o] then
+                    ItemPick[o].Visible = false
+                end
+            end
+        end
+    end
+end
 
 if aimbotToggle() then
     local target = nil
