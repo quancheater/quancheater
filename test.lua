@@ -355,17 +355,23 @@ if espToggle() or mobToggle() then
     local alertRadius = 60
 
     for ent, ed in pairs(ESPdata) do
-    if not ent or not ent:IsDescendantOf(workspace) then
-        for _, v in pairs(ed) do pcall(function() v:Remove() end) end
-        ESPdata[ent] = nil
-    else
-        ed.box.Visible = false
-        ed.line.Visible = false
-        ed.name.Visible = false
-        ed.hp.Visible = false
-        if ed.dist then ed.dist.Visible = false end
-        for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
-    end
+        if not ent or not ent:IsDescendantOf(workspace) then
+            for _, v in pairs(ed) do
+                if typeof(v) == "table" then
+                    for _, sub in pairs(v) do pcall(function() sub:Remove() end) end
+                else
+                    pcall(function() v:Remove() end)
+                end
+            end
+            ESPdata[ent] = nil
+        else
+            ed.box.Visible = false
+            ed.line.Visible = false
+            ed.name.Visible = false
+            ed.hp.Visible = false
+            if ed.dist then ed.dist.Visible = false end
+            for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+        end
     end
 
     local function handleESP(target, isPlayer)
@@ -470,7 +476,20 @@ if espToggle() or mobToggle() then
         dot.Visible = true
         task.delay(0.3, function() dot:Remove() end)
     end
+
 else
+    -- Xoá toàn bộ ESP hiện có (reset tất cả khi tắt ESP)
+    for ent, ed in pairs(ESPdata) do
+        for _, v in pairs(ed) do
+            if typeof(v) == "table" then
+                for _, sub in pairs(v) do pcall(function() sub:Remove() end) end
+            else
+                pcall(function() v:Remove() end)
+            end
+        end
+    end
+    ESPdata = {}
+
     if counter then counter.Visible = false end
 end
 
