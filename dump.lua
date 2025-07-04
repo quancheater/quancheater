@@ -1,83 +1,89 @@
---===[ ESP ITEM MENU - QuanCheaterVN ]===--
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local LP = Players.LocalPlayer
 
-local selectedItem = nil
-local drawings = {}
+local currentHighlights = {}
+local buttons = {}
 
--- Xoá ESP cũ
-local function clearDrawings()
-	for _, d in pairs(drawings) do
-		if d and d.Remove then d:Remove() end
+-- 🌟 Hàm tạo full path tên object
+local function getFullPath(obj)
+	local path = {}
+	while obj and obj ~= game do
+		table.insert(path, 1, obj.Name)
+		obj = obj.Parent
 	end
-	drawings = {}
+	return table.concat(path, ".")
 end
 
--- Vẽ ESP tới item
-local function drawESP(target)
-	clearDrawings()
-	if not target then return end
+-- 🌈 Highlight item
+local function highlightItem(obj)
+	if not currentHighlights[obj] then
+		currentHighlights[obj] = {}
+	end
+	local list = currentHighlights[obj]
 
-	local part = target:IsA("BasePart") and target or target:IsA("Model") and target:FindFirstChildWhichIsA("BasePart")
-	if not part then return end
-
-	local sp, onScreen = Camera:WorldToViewportPoint(part.Position)
-	if not onScreen then return end
-
-	local box = Drawing.new("Square")
-	box.Size = Vector2.new(40, 40)
-	box.Position = Vector2.new(sp.X - 20, sp.Y - 20)
-	box.Color = Color3.fromRGB(0, 255, 0)
-	box.Thickness = 2
-	box.Visible = true
-	table.insert(drawings, box)
-
-	local line = Drawing.new("Line")
-	line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-	line.To = Vector2.new(sp.X, sp.Y)
-	line.Color = Color3.fromRGB(0, 255, 0)
-	line.Thickness = 2
-	line.Visible = true
-	table.insert(drawings, line)
-
-	local txt = Drawing.new("Text")
-	txt.Text = "[ITEM] " .. target.Name
-	txt.Size = 15
-	txt.Center = true
-	txt.Outline = true
-	txt.Color = Color3.fromRGB(0, 255, 0)
-	txt.Position = Vector2.new(sp.X, sp.Y - 35)
-	txt.Visible = true
-	table.insert(drawings, txt)
+	if obj:IsA("BasePart") then
+		obj.Material = Enum.Material.Neon
+		obj.Color = Color3.fromRGB(0, 255, 0)
+		obj.Transparency = 0.2
+		table.insert(list, obj)
+	elseif obj:IsA("Model") then
+		for _, part in ipairs(obj:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Material = Enum.Material.Neon
+				part.Color = Color3.fromRGB(0, 255, 0)
+				part.Transparency = 0.2
+				table.insert(list, part)
+			end
+		end
+	end
 end
 
--- Cập nhật ESP mỗi frame
-game:GetService("RunService").RenderStepped:Connect(function()
-	if selectedItem and selectedItem.Parent then
-		drawESP(selectedItem)
-	else
-		clearDrawings()
+-- ❌ Clear 1 item
+local function clearItem(obj)
+	local list = currentHighlights[obj]
+	if list then
+		for _, part in ipairs(list) do
+			if part:IsA("BasePart") then
+				part.Material = Enum.Material.Plastic
+				part.Transparency = 0
+			end
+		end
 	end
-end)
+	currentHighlights[obj] = nil
+end
 
---===[ GUI MENU ]===--
+-- ❌ Reset toàn bộ
+local function resetAll()
+	for obj in pairs(currentHighlights) do
+		clearItem(obj)
+	end
+end
+
+-- 💾 Save
+local function saveSet()
+	local paths = {}
+	for obj in pairs(currentHighlights) do
+		table.insert(paths, getFullPath(obj))
+	end
+	writefile("QuanItemSet.txt", table.concat(paths, "\n"))
+end
+
+-- 📋 GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "ItemESPMenu"
+gui.Name = "QuanItemHighlightUI"
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 350, 0, 500)
-frame.Position = UDim2.new(0, 30, 0, 100)
+frame.Size = UDim2.new(0, 400, 0, 500)
+frame.Position = UDim2.new(0, 50, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 
 local title = Instance.new("TextLabel", frame)
-title.Text = "Item ESP Menu"
+title.Text = "QuanCheaterVN Item Chams"
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
-title.TextColor3 = Color3.new(1, 1, 1)
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 
@@ -91,51 +97,80 @@ searchBox.Font = Enum.Font.Gotham
 searchBox.TextSize = 14
 searchBox.BorderSizePixel = 0
 
+local resetBtn = Instance.new("TextButton", frame)
+resetBtn.Text = "Reset ALL"
+resetBtn.Size = UDim2.new(0, 100, 0, 28)
+resetBtn.Position = UDim2.new(0, 5, 0, 60)
+resetBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+resetBtn.TextColor3 = Color3.new(1, 1, 1)
+resetBtn.Font = Enum.Font.Gotham
+resetBtn.TextSize = 13
+
+local saveBtn = Instance.new("TextButton", frame)
+saveBtn.Text = "Lưu đã set"
+saveBtn.Size = UDim2.new(0, 100, 0, 28)
+saveBtn.Position = UDim2.new(0, 115, 0, 60)
+saveBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+saveBtn.TextColor3 = Color3.new(1, 1, 1)
+saveBtn.Font = Enum.Font.Gotham
+saveBtn.TextSize = 13
+
 local scroll = Instance.new("ScrollingFrame", frame)
-scroll.Size = UDim2.new(1, -10, 1, -70)
-scroll.Position = UDim2.new(0, 5, 0, 60)
+scroll.Size = UDim2.new(1, -10, 1, -100)
+scroll.Position = UDim2.new(0, 5, 0, 95)
 scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 scroll.ScrollBarThickness = 6
 scroll.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 scroll.BorderSizePixel = 0
 
-local itemButtons = {}
-
--- Cập nhật danh sách item
+-- 🔁 Update list
 local function updateList(filter)
-	for _, b in pairs(itemButtons) do b:Destroy() end
-	itemButtons = {}
+	for _, b in ipairs(buttons) do b:Destroy() end
+	buttons = {}
 
 	local y = 0
 	for _, obj in ipairs(workspace:GetDescendants()) do
 		local isValid = obj:IsA("BasePart") or (obj:IsA("Model") and obj:FindFirstChildWhichIsA("BasePart"))
-		if isValid and (filter == "" or obj.Name:lower():find(filter:lower())) then
-			local btn = Instance.new("TextButton", scroll)
-			btn.Size = UDim2.new(1, 0, 0, 28)
-			btn.Position = UDim2.new(0, 0, 0, y)
-			btn.Text = obj.Name
-			btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-			btn.TextColor3 = Color3.new(1, 1, 1)
-			btn.Font = Enum.Font.Gotham
-			btn.TextSize = 13
-			btn.BorderSizePixel = 0
+		if isValid then
+			local full = getFullPath(obj)
+			if filter == "" or full:lower():find(filter:lower()) then
+				local btn = Instance.new("TextButton", scroll)
+				btn.Size = UDim2.new(1, 0, 0, 28)
+				btn.Position = UDim2.new(0, 0, 0, y)
+				btn.Text = full
+				btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+				btn.TextColor3 = Color3.new(1, 1, 1)
+				btn.Font = Enum.Font.Gotham
+				btn.TextSize = 13
+				btn.TextXAlignment = Enum.TextXAlignment.Left
+				btn.BorderSizePixel = 0
 
-			btn.MouseButton1Click:Connect(function()
-				selectedItem = obj
-			end)
+				btn.MouseButton1Click:Connect(function()
+					if currentHighlights[obj] then
+						clearItem(obj)
+						btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+					else
+						highlightItem(obj)
+						btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+					end
+				end)
 
-			table.insert(itemButtons, btn)
-			y += 30
+				table.insert(buttons, btn)
+				y += 30
+			end
 		end
 	end
 
 	scroll.CanvasSize = UDim2.new(0, 0, 0, y)
 end
 
--- Search realtime
+-- Kết nối
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
 	updateList(searchBox.Text)
 end)
 
--- Khởi tạo lần đầu
+resetBtn.MouseButton1Click:Connect(resetAll)
+saveBtn.MouseButton1Click:Connect(saveSet)
+
+-- Khởi tạo
 updateList("")
