@@ -330,15 +330,17 @@ local function IsVisible(part)
 end
 
 if espToggle() or mobToggle() then
-    playerESPCount = 0
-    mobESPCount = 0
-
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local topCenter = Vector2.new(screenCenter.X, 0)
     local alertMap = {}
     local alertRadius = 60
 
-    -- Cleanup những ESP đã chết hoặc rời workspace
+    playerESPCount = 0
+    mobESPCount = 0
+
+    local visibleTargets = {} -- giữ danh sách các target có hiển thị
+
+    -- Xoá ESP các entity đã rời khỏi workspace hoặc chết
     for ent, ed in pairs(ESPdata) do
         if not ent or not ent:IsDescendantOf(workspace) or not ent:FindFirstChild("Humanoid") or ent.Humanoid.Health <= 0 then
             for _, v in pairs(ed) do
@@ -360,10 +362,9 @@ if espToggle() or mobToggle() then
     end
 
     local function handleESP(target, isPlayer)
-        if not target:FindFirstChild("Humanoid") or not target:FindFirstChild("HumanoidRootPart") then return end
-        local hum = target.Humanoid
-        local hrp = target.HumanoidRootPart
-        if hum.Health <= 0 or hum.Health == math.huge then return end
+        local hum = target:FindFirstChild("Humanoid")
+        local hrp = target:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp or hum.Health <= 0 or hum.Health == math.huge then return end
 
         local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
         if distance > maxESPDistance then return end
@@ -371,11 +372,11 @@ if espToggle() or mobToggle() then
         local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
         local dir = (hrp.Position - Camera.CFrame.Position).Unit
         local dot = dir:Dot(Camera.CFrame.LookVector)
-        if dot <= 0 or not onScreen then return end
+        if not onScreen or dot <= 0 then return end
 
+        -- Có hiển thị ESP phía trước
+        table.insert(visibleTargets, target)
         if isPlayer then playerESPCount += 1 else mobESPCount += 1 end
-        local toggleCheck = isPlayer and espToggle() or mobToggle()
-        if not toggleCheck then return end
 
         if not ESPdata[target] then initESP(target) end
         local ed = ESPdata[target]
@@ -435,7 +436,7 @@ if espToggle() or mobToggle() then
         end
     end
 
-    -- Xử lý Player
+    -- Quét Player
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
             if not (p.Team and LP.Team and p.Team == LP.Team) then
@@ -444,31 +445,35 @@ if espToggle() or mobToggle() then
         end
     end
 
-    -- Xử lý Mob
+    -- Quét Mob
     for _, mob in pairs(workspace:GetDescendants()) do
         if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
             handleESP(mob, false)
         end
     end
 
-    -- Hiển thị tổng số ESP
+    -- Nếu không có gì đang hiện -> clear toàn bộ ESP
+    if #visibleTargets == 0 then
+        for ent, ed in pairs(ESPdata) do
+            for _, v in pairs(ed) do
+                if typeof(v) == "table" then
+                    for _, sub in pairs(v) do pcall(function() sub:Remove() end) end
+                else
+                    pcall(function() v:Remove() end)
+                end
+            end
+        end
+        ESPdata = {}
+        if counter then counter.Visible = false end
+        return -- kết thúc nếu không có gì render
+    end
+
+    -- Hiển thị số lượng ESP
     counter.Text = "ESP: " .. playerESPCount .. "  |  MOB: " .. mobESPCount
     counter.Visible = true
 
-    -- Alert hướng đối tượng ngoài tầm nhìn
-    for angle, _ in pairs(alertMap) do
-        local dotPos = screenCenter + Vector2.new(math.cos(angle), math.sin(angle)) * alertRadius
-        local dot = Drawing.new("Circle")
-        dot.Position = dotPos
-        dot.Radius = 6
-        dot.Filled = true
-        dot.Color = Color3.fromHSV(angle % 1, 1, 1)
-        dot.Visible = true
-        task.delay(0.3, function() dot:Remove() end)
-    end
-
 else
-    -- Tắt ESP -> remove toàn bộ Drawing sạch sẽ
+    -- ESP tắt -> dọn toàn bộ
     for ent, ed in pairs(ESPdata) do
         for _, v in pairs(ed) do
             if typeof(v) == "table" then
@@ -479,7 +484,6 @@ else
         end
     end
     ESPdata = {}
-
     if counter then counter.Visible = false end
 end
 
