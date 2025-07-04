@@ -4,7 +4,6 @@ local LP = Players.LocalPlayer
 local currentHighlights = {}
 local buttons = {}
 
--- 💡 Tạo đường dẫn tên đầy đủ
 local function getFullPath(obj)
 	local path = {}
 	while obj and obj ~= game do
@@ -14,7 +13,6 @@ local function getFullPath(obj)
 	return table.concat(path, ".")
 end
 
--- 🌟 Tạo hiệu ứng glowing giả nếu object quá xa
 local function createGlowProxy(item)
 	local pos
 	if item:IsA("Model") then
@@ -37,7 +35,6 @@ local function createGlowProxy(item)
 	task.delay(3, function() glow:Destroy() end)
 end
 
--- ✅ Highlight thật (nếu nằm trong render)
 local function highlightItem(obj)
 	if currentHighlights[obj] then return end
 	currentHighlights[obj] = {}
@@ -61,13 +58,11 @@ local function highlightItem(obj)
 		end
 	end
 
-	-- Nếu không có part nào valid (ngoài render) thì tạo glow proxy
 	if not valid then
 		createGlowProxy(obj)
 	end
 end
 
--- ❌ Clear highlight 1 item
 local function clearItem(obj)
 	local list = currentHighlights[obj]
 	if list then
@@ -81,14 +76,12 @@ local function clearItem(obj)
 	currentHighlights[obj] = nil
 end
 
--- 🔄 Reset ALL
 local function resetAll()
 	for obj in pairs(currentHighlights) do
 		clearItem(obj)
 	end
 end
 
--- 💾 Save
 local function saveSet()
 	local paths = {}
 	for obj in pairs(currentHighlights) do
@@ -97,9 +90,9 @@ local function saveSet()
 	writefile("QuanItemSet.txt", table.concat(paths, "\n"))
 end
 
--- 🖼️ GUI setup
+-- GUI setup
 local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "QuanItemHighlighter"
+gui.Name = "QuanItemChams"
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 400, 0, 500)
@@ -152,7 +145,6 @@ scroll.ScrollBarThickness = 6
 scroll.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 scroll.BorderSizePixel = 0
 
--- 📋 Update danh sách
 local function updateList(filter)
 	for _, b in ipairs(buttons) do b:Destroy() end
 	buttons = {}
@@ -161,12 +153,14 @@ local function updateList(filter)
 	for _, obj in ipairs(workspace:GetDescendants()) do
 		local isValid = obj:IsA("BasePart") or (obj:IsA("Model") and obj:FindFirstChildWhichIsA("BasePart"))
 		if isValid then
-			local path = getFullPath(obj)
-			if filter == "" or path:lower():find(filter:lower()) then
+			local displayName = obj.Name
+			local fullPath = getFullPath(obj)
+
+			if filter == "" or displayName:lower():find(filter:lower()) then
 				local btn = Instance.new("TextButton", scroll)
 				btn.Size = UDim2.new(1, 0, 0, 28)
 				btn.Position = UDim2.new(0, 0, 0, y)
-				btn.Text = path
+				btn.Text = displayName
 				btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 				btn.TextColor3 = Color3.new(1, 1, 1)
 				btn.Font = Enum.Font.Gotham
@@ -193,7 +187,6 @@ local function updateList(filter)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, y)
 end
 
--- 🎯 Kết nối nút và khởi động
 resetBtn.MouseButton1Click:Connect(resetAll)
 saveBtn.MouseButton1Click:Connect(saveSet)
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
