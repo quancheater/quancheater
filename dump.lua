@@ -1,38 +1,83 @@
+--===[ ESP ITEM MENU - QuanCheaterVN ]===--
 local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
 
+local selectedItem = nil
+local drawings = {}
+
+-- Xoá ESP cũ
+local function clearDrawings()
+	for _, d in pairs(drawings) do
+		if d and d.Remove then d:Remove() end
+	end
+	drawings = {}
+end
+
+-- Vẽ ESP tới item
+local function drawESP(target)
+	clearDrawings()
+	if not target then return end
+
+	local part = target:IsA("BasePart") and target or target:IsA("Model") and target:FindFirstChildWhichIsA("BasePart")
+	if not part then return end
+
+	local sp, onScreen = Camera:WorldToViewportPoint(part.Position)
+	if not onScreen then return end
+
+	local box = Drawing.new("Square")
+	box.Size = Vector2.new(40, 40)
+	box.Position = Vector2.new(sp.X - 20, sp.Y - 20)
+	box.Color = Color3.fromRGB(0, 255, 0)
+	box.Thickness = 2
+	box.Visible = true
+	table.insert(drawings, box)
+
+	local line = Drawing.new("Line")
+	line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+	line.To = Vector2.new(sp.X, sp.Y)
+	line.Color = Color3.fromRGB(0, 255, 0)
+	line.Thickness = 2
+	line.Visible = true
+	table.insert(drawings, line)
+
+	local txt = Drawing.new("Text")
+	txt.Text = "[ITEM] " .. target.Name
+	txt.Size = 15
+	txt.Center = true
+	txt.Outline = true
+	txt.Color = Color3.fromRGB(0, 255, 0)
+	txt.Position = Vector2.new(sp.X, sp.Y - 35)
+	txt.Visible = true
+	table.insert(drawings, txt)
+end
+
+-- Cập nhật ESP mỗi frame
+game:GetService("RunService").RenderStepped:Connect(function()
+	if selectedItem and selectedItem.Parent then
+		drawESP(selectedItem)
+	else
+		clearDrawings()
+	end
+end)
+
+--===[ GUI MENU ]===--
 local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "QuanItemESPMenu"
-
-local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0, 120, 0, 35)
-toggleBtn.Position = UDim2.new(0, 20, 0, 60)
-toggleBtn.Text = "Toggle Menu"
-toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
-toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 14
+gui.Name = "ItemESPMenu"
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 350, 0, 500)
-frame.Position = UDim2.new(0, 20, 0, 100)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.Position = UDim2.new(0, 30, 0, 100)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
-frame.Visible = false
-
-toggleBtn.MouseButton1Click:Connect(function()
-	frame.Visible = not frame.Visible
-end)
 
 local title = Instance.new("TextLabel", frame)
-title.Text = "QuanCheaterVN Item Viewer"
+title.Text = "Item ESP Menu"
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 
@@ -40,108 +85,46 @@ local searchBox = Instance.new("TextBox", frame)
 searchBox.PlaceholderText = "Tìm item..."
 searchBox.Size = UDim2.new(1, -10, 0, 25)
 searchBox.Position = UDim2.new(0, 5, 0, 30)
-searchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+searchBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 searchBox.TextColor3 = Color3.new(1, 1, 1)
 searchBox.Font = Enum.Font.Gotham
 searchBox.TextSize = 14
 searchBox.BorderSizePixel = 0
 
 local scroll = Instance.new("ScrollingFrame", frame)
-scroll.Size = UDim2.new(1, -10, 1, -65)
+scroll.Size = UDim2.new(1, -10, 1, -70)
 scroll.Position = UDim2.new(0, 5, 0, 60)
 scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 scroll.ScrollBarThickness = 6
-scroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+scroll.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 scroll.BorderSizePixel = 0
 
-local currentHighlights = {}
-local buttons = {}
-local DrawingItems = {}
+local itemButtons = {}
 
-local function clearHighlights()
-	for _, obj in pairs(currentHighlights) do
-		if obj:IsA("BasePart") then
-			obj.Material = Enum.Material.Plastic
-			obj.Transparency = 0
-		end
-	end
-	currentHighlights = {}
-
-	for _, drawings in pairs(DrawingItems) do
-		for _, d in pairs(drawings) do
-			if d.Remove then d:Remove() end
-		end
-	end
-	DrawingItems = {}
-end
-
-local function highlightItem(name, obj)
-	clearHighlights()
-
-	local part
-	if obj:IsA("BasePart") then
-		part = obj
-	elseif obj:IsA("Model") then
-		part = obj:FindFirstChildWhichIsA("BasePart")
-	end
-
-	if part then
-		part.Material = Enum.Material.Neon
-		part.Color = Color3.fromRGB(0, 255, 0)
-		part.Transparency = 0.2
-		currentHighlights[name] = part
-
-		-- 🟢 Teleport đến item
-		local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-		if root then
-			root.CFrame = CFrame.new(part.Position + Vector3.new(0, 5, 0))
-		end
-	end
-end
-
-local function collectItems()
-	local map = {}
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") or obj:IsA("Model") then
-			if obj:FindFirstChildWhichIsA("ProximityPrompt") or obj:FindFirstChildWhichIsA("ClickDetector") then
-				local key = obj.Name
-				if not map[key] then map[key] = {} end
-				table.insert(map[key], obj)
-			end
-		end
-	end
-	return map
-end
-
-local function updateSearch(keyword)
-	for _, b in ipairs(buttons) do b:Destroy() end
-	buttons = {}
+-- Cập nhật danh sách item
+local function updateList(filter)
+	for _, b in pairs(itemButtons) do b:Destroy() end
+	itemButtons = {}
 
 	local y = 0
-	local itemMap = collectItems()
-
-	for itemName, objs in pairs(itemMap) do
-		if keyword == "" or itemName:lower():find(keyword:lower()) then
-			local row = Instance.new("Frame", scroll)
-			row.Size = UDim2.new(1, 0, 0, 28)
-			row.Position = UDim2.new(0, 0, 0, y)
-			row.BackgroundTransparency = 1
-
-			local btn = Instance.new("TextButton", row)
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		local isValid = obj:IsA("BasePart") or (obj:IsA("Model") and obj:FindFirstChildWhichIsA("BasePart"))
+		if isValid and (filter == "" or obj.Name:lower():find(filter:lower())) then
+			local btn = Instance.new("TextButton", scroll)
 			btn.Size = UDim2.new(1, 0, 0, 28)
-			btn.Position = UDim2.new(0, 0, 0, 0)
-			btn.Text = itemName .. " [" .. tostring(#objs) .. "]"
+			btn.Position = UDim2.new(0, 0, 0, y)
+			btn.Text = obj.Name
+			btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+			btn.TextColor3 = Color3.new(1, 1, 1)
 			btn.Font = Enum.Font.Gotham
 			btn.TextSize = 13
-			btn.TextColor3 = Color3.new(1, 1, 1)
-			btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 			btn.BorderSizePixel = 0
 
 			btn.MouseButton1Click:Connect(function()
-				highlightItem(itemName, objs[1])
+				selectedItem = obj
 			end)
 
-			table.insert(buttons, row)
+			table.insert(itemButtons, btn)
 			y += 30
 		end
 	end
@@ -149,56 +132,10 @@ local function updateSearch(keyword)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, y)
 end
 
+-- Search realtime
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
-	updateSearch(searchBox.Text)
+	updateList(searchBox.Text)
 end)
 
-updateSearch("")
-
--- 🎯 ESP Drawing Logic
-RunService.RenderStepped:Connect(function()
-	for _, drawings in pairs(DrawingItems) do
-		for _, d in pairs(drawings) do
-			if d.Remove then d:Remove() end
-		end
-	end
-	DrawingItems = {}
-
-	for itemName, obj in pairs(currentHighlights) do
-		local espSet = {}
-		if obj:IsA("BasePart") then
-			local pos = obj.Position
-			local sp, onScreen = Camera:WorldToViewportPoint(pos)
-
-			-- Box
-			local box = Drawing.new("Square")
-			box.Size = Vector2.new(40, 40)
-			box.Position = Vector2.new(sp.X - 20, sp.Y - 20)
-			box.Color = Color3.fromRGB(0, 255, 0)
-			box.Thickness = 2
-			box.Visible = onScreen
-			table.insert(espSet, box)
-
-			-- Line
-			local line = Drawing.new("Line")
-			line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-			line.To = Vector2.new(sp.X, sp.Y)
-			line.Color = Color3.fromRGB(0, 255, 0)
-			line.Thickness = 1.5
-			line.Visible = onScreen
-			table.insert(espSet, line)
-
-			-- Name
-			local txt = Drawing.new("Text")
-			txt.Text = "[ITEM] " .. obj.Name
-			txt.Size = 16
-			txt.Center = true
-			txt.Outline = true
-			txt.Color = Color3.fromRGB(0, 255, 0)
-			txt.Position = Vector2.new(sp.X, sp.Y - 30)
-			txt.Visible = onScreen
-			table.insert(espSet, txt)
-		end
-		DrawingItems[itemName] = espSet
-	end
-end)
+-- Khởi tạo lần đầu
+updateList("")
