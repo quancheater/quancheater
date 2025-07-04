@@ -277,8 +277,13 @@ if aimbotToggle() then
     end
 
     if target then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        -- Khóa hướng nhìn chính xác vào đầu target, không lệch
+        local camPos = Camera.CFrame.Position
+        local headPos = target.Position + Vector3.new(0, 0.05, 0) -- tăng độ chính xác lên trung tâm đầu
+        local aimDirection = (headPos - camPos).Unit
+        Camera.CFrame = CFrame.lookAt(camPos, camPos + aimDirection)
 
+        -- Tắt recoil và shake để giữ aim cố định
         local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
         if recoil then
             for _, v in ipairs(recoil:GetChildren()) do
@@ -288,6 +293,7 @@ if aimbotToggle() then
             end
         end
 
+        -- Xóa recoil hoặc camera shake script
         pcall(function()
             for _, s in ipairs({
                 LP.PlayerScripts:FindFirstChild("GunRecoil"),
@@ -300,7 +306,9 @@ if aimbotToggle() then
                     if s:IsA("ModuleScript") then
                         local m = require(s)
                         for k, v in pairs(m) do
-                            if typeof(v) == "function" then m[k] = function() end end
+                            if typeof(v) == "function" then
+                                m[k] = function() end
+                            end
                         end
                     else
                         s:Destroy()
