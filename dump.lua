@@ -4,7 +4,7 @@ local LP = Players.LocalPlayer
 local currentHighlights = {}
 local buttons = {}
 
--- 🌟 Hàm tạo full path tên object
+-- 💡 Tạo đường dẫn tên đầy đủ
 local function getFullPath(obj)
 	local path = {}
 	while obj and obj ~= game do
@@ -14,31 +14,60 @@ local function getFullPath(obj)
 	return table.concat(path, ".")
 end
 
--- 🌈 Highlight item
-local function highlightItem(obj)
-	if not currentHighlights[obj] then
-		currentHighlights[obj] = {}
+-- 🌟 Tạo hiệu ứng glowing giả nếu object quá xa
+local function createGlowProxy(item)
+	local pos
+	if item:IsA("Model") then
+		local part = item:FindFirstChildWhichIsA("BasePart")
+		pos = part and part.Position
+	elseif item:IsA("BasePart") then
+		pos = item.Position
 	end
-	local list = currentHighlights[obj]
+	if not pos then return end
 
+	local glow = Instance.new("Part")
+	glow.Anchored = true
+	glow.CanCollide = false
+	glow.Transparency = 0.2
+	glow.Material = Enum.Material.Neon
+	glow.Color = Color3.fromRGB(0, 255, 255)
+	glow.Size = Vector3.new(1, 1, 1)
+	glow.Position = pos
+	glow.Parent = workspace
+	task.delay(3, function() glow:Destroy() end)
+end
+
+-- ✅ Highlight thật (nếu nằm trong render)
+local function highlightItem(obj)
+	if currentHighlights[obj] then return end
+	currentHighlights[obj] = {}
+
+	local valid = false
 	if obj:IsA("BasePart") then
 		obj.Material = Enum.Material.Neon
-		obj.Color = Color3.fromRGB(0, 255, 0)
+		obj.Color = Color3.fromRGB(0, 255, 255)
 		obj.Transparency = 0.2
-		table.insert(list, obj)
+		table.insert(currentHighlights[obj], obj)
+		valid = true
 	elseif obj:IsA("Model") then
 		for _, part in ipairs(obj:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.Material = Enum.Material.Neon
-				part.Color = Color3.fromRGB(0, 255, 0)
+				part.Color = Color3.fromRGB(0, 255, 255)
 				part.Transparency = 0.2
-				table.insert(list, part)
+				table.insert(currentHighlights[obj], part)
+				valid = true
 			end
 		end
 	end
+
+	-- Nếu không có part nào valid (ngoài render) thì tạo glow proxy
+	if not valid then
+		createGlowProxy(obj)
+	end
 end
 
--- ❌ Clear 1 item
+-- ❌ Clear highlight 1 item
 local function clearItem(obj)
 	local list = currentHighlights[obj]
 	if list then
@@ -52,7 +81,7 @@ local function clearItem(obj)
 	currentHighlights[obj] = nil
 end
 
--- ❌ Reset toàn bộ
+-- 🔄 Reset ALL
 local function resetAll()
 	for obj in pairs(currentHighlights) do
 		clearItem(obj)
@@ -68,9 +97,9 @@ local function saveSet()
 	writefile("QuanItemSet.txt", table.concat(paths, "\n"))
 end
 
--- 📋 GUI
+-- 🖼️ GUI setup
 local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "QuanItemHighlightUI"
+gui.Name = "QuanItemHighlighter"
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 400, 0, 500)
@@ -80,10 +109,10 @@ frame.Active = true
 frame.Draggable = true
 
 local title = Instance.new("TextLabel", frame)
-title.Text = "QuanCheaterVN Item Chams"
+title.Text = "QuanCheaterVN - Item Chams"
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 
@@ -123,7 +152,7 @@ scroll.ScrollBarThickness = 6
 scroll.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 scroll.BorderSizePixel = 0
 
--- 🔁 Update list
+-- 📋 Update danh sách
 local function updateList(filter)
 	for _, b in ipairs(buttons) do b:Destroy() end
 	buttons = {}
@@ -132,12 +161,12 @@ local function updateList(filter)
 	for _, obj in ipairs(workspace:GetDescendants()) do
 		local isValid = obj:IsA("BasePart") or (obj:IsA("Model") and obj:FindFirstChildWhichIsA("BasePart"))
 		if isValid then
-			local full = getFullPath(obj)
-			if filter == "" or full:lower():find(filter:lower()) then
+			local path = getFullPath(obj)
+			if filter == "" or path:lower():find(filter:lower()) then
 				local btn = Instance.new("TextButton", scroll)
 				btn.Size = UDim2.new(1, 0, 0, 28)
 				btn.Position = UDim2.new(0, 0, 0, y)
-				btn.Text = full
+				btn.Text = path
 				btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 				btn.TextColor3 = Color3.new(1, 1, 1)
 				btn.Font = Enum.Font.Gotham
@@ -164,13 +193,11 @@ local function updateList(filter)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, y)
 end
 
--- Kết nối
+-- 🎯 Kết nối nút và khởi động
+resetBtn.MouseButton1Click:Connect(resetAll)
+saveBtn.MouseButton1Click:Connect(saveSet)
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
 	updateList(searchBox.Text)
 end)
 
-resetBtn.MouseButton1Click:Connect(resetAll)
-saveBtn.MouseButton1Click:Connect(saveSet)
-
--- Khởi tạo
 updateList("")
