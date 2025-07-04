@@ -56,29 +56,6 @@ title.BackgroundTransparency = 1
 local tabs = { "ESP", "Mem/S&F" }
 local tabFrames = {}
 
-gui.Name = "StoreUI"
-gui.ResetOnSpawn = false
-
-local storeFrame = Instance.new("Frame", gui)
-storeFrame.Size = UDim2.new(0, 150, 0, 300)
-storeFrame.Position = UDim2.new(1, -160, 0.5, -150)
-storeFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-storeFrame.BorderSizePixel = 0
-
-local storeLabel = Instance.new("TextLabel", storeFrame)
-storeLabel.Size = UDim2.new(1, 0, 0, 30)
-storeLabel.Text = " TÚI ĐỒ"
-storeLabel.TextColor3 = Color3.new(1, 1, 1)
-storeLabel.BackgroundTransparency = 1
-storeLabel.Font = Enum.Font.GothamBold
-storeLabel.TextSize = 14
-
-local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local StoreItems = {}
-
-
 for i, name in ipairs(tabs) do
 	local tb = Instance.new("TextButton", frame)
 	tb.Text = name
@@ -203,8 +180,15 @@ RunService.RenderStepped:Connect(function()
 		LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
 	end
 
-
-
+	for obj, txt in pairs(ItemPick) do
+		if not obj:IsDescendantOf(workspace) then
+			txt:Remove()
+			ItemPick[obj] = nil
+		else
+			txt.Visible = false
+		end
+	end
+	
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
     local targetPosition = part.Position
@@ -485,76 +469,124 @@ else
     if counter then counter.Visible = false end
 end
 
-for _, o in pairs(workspace:GetDescendants()) do
-	if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
-		if not ItemPick[o] then
-			local txt = Drawing.new("Text")
-			txt.Size = 13
-			txt.Color = Color3.fromRGB(0, 255, 255)
-			txt.Center = true
-			txt.Outline = true
-			ItemPick[o] = txt
 
-			-- Nút kéo
-			local btn = Instance.new("TextButton", gui)
-			btn.Size = UDim2.new(0, 100, 0, 25)
-			btn.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-			btn.TextColor3 = Color3.fromRGB(0, 0, 0)
-			btn.Text = "[Pick] " .. o.Name
-			btn.Font = Enum.Font.SourceSansBold
-			btn.TextSize = 14
-			btn.Position = UDim2.new(0, -9999, 0, -9999)
-			btn.Visible = false
+if itemPickToggle() then
+    local LP = game:GetService("Players").LocalPlayer
+    local Mouse = LP:GetMouse()
+    local maxItemDistance = 60
 
-			local dragging = false
-			local offset = Vector2.new()
+    if not gui then
+        gui = Instance.new("ScreenGui", LP:WaitForChild("PlayerGui"))
+        gui.Name = "StoreUI"
+        gui.ResetOnSpawn = false
 
-			txt.MouseButton1Down = function()
-				dragging = true
-				offset = Vector2.new(Mouse.X - btn.AbsolutePosition.X, Mouse.Y - btn.AbsolutePosition.Y)
-				btn.Position = UDim2.new(0, Mouse.X, 0, Mouse.Y)
-				btn.Visible = true
-			end
+        storeFrame = Instance.new("Frame", gui)
+        storeFrame.Size = UDim2.new(0, 150, 0, 300)
+        storeFrame.Position = UDim2.new(1, -160, 0.5, -150)
+        storeFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        storeFrame.BorderSizePixel = 0
 
-			UserInputService.InputEnded:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
-					dragging = false
-					local ab = btn.AbsolutePosition
-					local box = storeFrame.AbsolutePosition
-					local size = storeFrame.AbsoluteSize
+        local storeLabel = Instance.new("TextLabel", storeFrame)
+        storeLabel.Size = UDim2.new(1, 0, 0, 30)
+        storeLabel.Text = "🎒 TÚI ĐỒ"
+        storeLabel.TextColor3 = Color3.new(1, 1, 1)
+        storeLabel.BackgroundTransparency = 1
+        storeLabel.Font = Enum.Font.GothamBold
+        storeLabel.TextSize = 14
 
-					if ab.X >= box.X and ab.X <= box.X + size.X and ab.Y >= box.Y and ab.Y <= box.Y + size.Y then
-						if not StoreItems[o] then
-							StoreItems[o] = true
-							local label = Instance.new("TextLabel", storeFrame)
-							label.Size = UDim2.new(1, 0, 0, 20)
-							label.Text = o.Name
-							label.TextColor3 = Color3.new(1, 1, 1)
-							label.BackgroundTransparency = 1
-							label.Font = Enum.Font.Gotham
-							label.TextSize = 13
-						end
-					end
+        StoreItems = {}
+    end
 
-					btn.Visible = false
-				end
-			end)
+    for obj, txt in pairs(ItemPick) do
+        if not obj:IsDescendantOf(workspace) then
+            txt:Remove()
+            if txt._dragBtn then txt._dragBtn:Destroy() end
+            ItemPick[obj] = nil
+        else
+            txt.Visible = false
+        end
+    end
 
-			RunService.RenderStepped:Connect(function()
-				if dragging and btn.Visible then
-					btn.Position = UDim2.new(0, Mouse.X - offset.X, 0, Mouse.Y - offset.Y)
-				end
-			end)
-		end
+    for _, o in pairs(workspace:GetDescendants()) do
+        if (o:IsA("Part") or o:IsA("Model")) and (o:FindFirstChildWhichIsA("ProximityPrompt") or o:FindFirstChildWhichIsA("ClickDetector")) then
+            local pos = o:IsA("Model") and (o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position) or o.Position
+            local dist = (pos - Camera.CFrame.Position).Magnitude
+            if dist > maxItemDistance then
+                if ItemPick[o] then
+                    ItemPick[o]:Remove()
+                    if ItemPick[o]._dragBtn then ItemPick[o]._dragBtn:Destroy() end
+                    ItemPick[o] = nil
+                end
+            else
+                if not ItemPick[o] then
+                    local txt = Drawing.new("Text")
+                    txt.Size = 13
+                    txt.Color = Color3.fromRGB(0, 255, 255)
+                    txt.Center = true
+                    txt.Outline = true
+                    ItemPick[o] = txt
 
-		local pos = o:IsA("Model") and (o.PrimaryPart and o.PrimaryPart.Position or o:GetPivot().Position) or o.Position
-		local sp, on = Camera:WorldToViewportPoint(pos)
-		ItemPick[o].Position = Vector2.new(sp.X, sp.Y)
-		ItemPick[o].Text = "[Pick] " .. o.Name
-		ItemPick[o].Visible = on
-	end
+                    -- Tạo nút kéo item
+                    local dragBtn = Instance.new("TextButton", gui)
+                    dragBtn.Size = UDim2.new(0, 100, 0, 25)
+                    dragBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+                    dragBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+                    dragBtn.Text = "[Pick] " .. o.Name
+                    dragBtn.Font = Enum.Font.SourceSansBold
+                    dragBtn.TextSize = 14
+                    dragBtn.Position = UDim2.new(0, -9999, 0, -9999)
+                    dragBtn.Visible = false
+                    ItemPick[o]._dragBtn = dragBtn
+
+                    local dragging = false
+                    local offset = Vector2.new()
+
+                    txt.MouseButton1Down = function()
+                        dragging = true
+                        offset = Vector2.new(Mouse.X - dragBtn.AbsolutePosition.X, Mouse.Y - dragBtn.AbsolutePosition.Y)
+                        dragBtn.Position = UDim2.new(0, Mouse.X, 0, Mouse.Y)
+                        dragBtn.Visible = true
+                    end
+
+                    game:GetService("UserInputService").InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
+                            dragging = false
+                            local ab = dragBtn.AbsolutePosition
+                            local box = storeFrame.AbsolutePosition
+                            local size = storeFrame.AbsoluteSize
+
+                            if ab.X >= box.X and ab.X <= box.X + size.X and ab.Y >= box.Y and ab.Y <= box.Y + size.Y then
+                                if not StoreItems[o] then
+                                    StoreItems[o] = true
+                                    local label = Instance.new("TextLabel", storeFrame)
+                                    label.Size = UDim2.new(1, 0, 0, 20)
+                                    label.Text = o.Name
+                                    label.TextColor3 = Color3.new(1, 1, 1)
+                                    label.BackgroundTransparency = 1
+                                    label.Font = Enum.Font.Gotham
+                                    label.TextSize = 13
+                                end
+                            end
+
+                            dragBtn.Visible = false
+                        end
+                    end)
+
+                    game:GetService("RunService").RenderStepped:Connect(function()
+                        if dragging and dragBtn.Visible then
+                            dragBtn.Position = UDim2.new(0, Mouse.X - offset.X, 0, Mouse.Y - offset.Y)
+                        end
+                    end)
+                end
+
+                local sp, on = Camera:WorldToViewportPoint(pos)
+                ItemPick[o].Position = Vector2.new(sp.X, sp.Y)
+                ItemPick[o].Text = "[Pick] " .. o.Name
+                ItemPick[o].Visible = on
+            end
+        end
+    end
 end
-
 
 
 
