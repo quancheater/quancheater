@@ -333,13 +333,16 @@ if espToggle() or mobToggle() then
     playerESPCount = 0
     mobESPCount = 0
 
+    local visiblePlayers = {}
+    local visibleMobs = {}
+
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
             if not (p.Team and LP.Team and p.Team == LP.Team) then
                 local hum = p.Character.Humanoid
                 local hrp = p.Character.HumanoidRootPart
-                local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
-                if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                if hum.Health > 0 and hum.Health < math.huge then
+                    table.insert(visiblePlayers, p.Character)
                     playerESPCount += 1
                 end
             end
@@ -349,9 +352,8 @@ if espToggle() or mobToggle() then
     for _, mob in pairs(workspace:GetDescendants()) do
         if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
             local hum = mob.Humanoid
-            local hrp = mob.HumanoidRootPart
-            local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
-            if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+            if hum.Health > 0 and hum.Health < math.huge then
+                table.insert(visibleMobs, mob)
                 mobESPCount += 1
             end
         end
@@ -362,8 +364,9 @@ if espToggle() or mobToggle() then
     local alertMap = {}
     local alertRadius = 60
 
+    -- Cleanup invalid ESPs only (not full wipe)
     for ent, ed in pairs(ESPdata) do
-        if not ent or not ent:IsDescendantOf(workspace) then
+        if not ent or not ent:IsDescendantOf(workspace) or not ent:FindFirstChild("Humanoid") or ent.Humanoid.Health <= 0 then
             for _, v in pairs(ed) do
                 if typeof(v) == "table" then
                     for _, sub in pairs(v) do pcall(function() sub:Remove() end) end
@@ -373,20 +376,24 @@ if espToggle() or mobToggle() then
             end
             ESPdata[ent] = nil
         else
-            ed.box.Visible = false
-            ed.line.Visible = false
-            ed.name.Visible = false
-            ed.hp.Visible = false
-            if ed.dist then ed.dist.Visible = false end
-            for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+            for _, v in pairs(ed) do
+                if typeof(v) == "table" then
+                    for _, sub in pairs(v) do sub.Visible = false end
+                elseif typeof(v) == "Instance" or typeof(v) == "table" then
+                    v.Visible = false
+                end
+            end
         end
     end
 
     local function handleESP(target, isPlayer)
+        if not target or not target:FindFirstChild("HumanoidRootPart") or not target:FindFirstChild("Humanoid") then return end
         local hum = target.Humanoid
+        if hum.Health <= 0 or hum.Health == math.huge then return end
+
         local hrp = target.HumanoidRootPart
         local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
-        if distance > maxESPDistance or hum.Health <= 0 or hum.Health == math.huge then return end
+        if distance > maxESPDistance then return end
 
         local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
         local dir = (hrp.Position - Camera.CFrame.Position).Unit
@@ -457,18 +464,12 @@ if espToggle() or mobToggle() then
         end
     end
 
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
-            if not (p.Team and LP.Team and p.Team == LP.Team) then
-                handleESP(p.Character, true)
-            end
-        end
+    -- Apply ESP only to valid ones
+    for _, char in pairs(visiblePlayers) do
+        handleESP(char, true)
     end
-
-    for _, mob in pairs(workspace:GetDescendants()) do
-        if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
-            handleESP(mob, false)
-        end
+    for _, mob in pairs(visibleMobs) do
+        handleESP(mob, false)
     end
 
     counter.Text = "ESP: " .. playerESPCount .. "  |  MOB: " .. mobESPCount
@@ -484,9 +485,8 @@ if espToggle() or mobToggle() then
         dot.Visible = true
         task.delay(0.3, function() dot:Remove() end)
     end
-
 else
-    -- Xoá toàn bộ ESP hiện có (reset tất cả khi tắt ESP)
+    -- Full cleanup if toggle is off
     for ent, ed in pairs(ESPdata) do
         for _, v in pairs(ed) do
             if typeof(v) == "table" then
@@ -497,10 +497,8 @@ else
         end
     end
     ESPdata = {}
-
     if counter then counter.Visible = false end
 end
-
 
 if itemPickToggle() then
     local LP = game:GetService("Players").LocalPlayer
