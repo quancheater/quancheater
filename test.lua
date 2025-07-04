@@ -355,12 +355,17 @@ if espToggle() or mobToggle() then
     local alertRadius = 60
 
     for ent, ed in pairs(ESPdata) do
+    if not ent or not ent:IsDescendantOf(workspace) then
+        for _, v in pairs(ed) do pcall(function() v:Remove() end) end
+        ESPdata[ent] = nil
+    else
         ed.box.Visible = false
         ed.line.Visible = false
         ed.name.Visible = false
         ed.hp.Visible = false
         if ed.dist then ed.dist.Visible = false end
         for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+    end
     end
 
     local function handleESP(target, isPlayer)
@@ -473,7 +478,7 @@ end
 if itemPickToggle() then
     local LP = game:GetService("Players").LocalPlayer
     local Mouse = LP:GetMouse()
-    local maxItemDistance = 60
+    local maxItemDistance = 200
 
     if not gui then
         gui = Instance.new("ScreenGui", LP:WaitForChild("PlayerGui"))
@@ -488,7 +493,7 @@ if itemPickToggle() then
 
         local storeLabel = Instance.new("TextLabel", storeFrame)
         storeLabel.Size = UDim2.new(1, 0, 0, 30)
-        storeLabel.Text = "🎒 TÚI ĐỒ"
+        storeLabel.Text = " TÚI ĐỒ"
         storeLabel.TextColor3 = Color3.new(1, 1, 1)
         storeLabel.BackgroundTransparency = 1
         storeLabel.Font = Enum.Font.GothamBold
@@ -526,7 +531,6 @@ if itemPickToggle() then
                     txt.Outline = true
                     ItemPick[o] = txt
 
-                    -- Tạo nút kéo item
                     local dragBtn = Instance.new("TextButton", gui)
                     dragBtn.Size = UDim2.new(0, 100, 0, 25)
                     dragBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 255)

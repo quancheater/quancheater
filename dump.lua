@@ -1,10 +1,10 @@
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
 
--- GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "QuanClassMenu"
+gui.Name = "QuanItemESPMenu"
 
 local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0, 120, 0, 35)
@@ -22,13 +22,14 @@ frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
+frame.Visible = false
 
 toggleBtn.MouseButton1Click:Connect(function()
 	frame.Visible = not frame.Visible
 end)
 
 local title = Instance.new("TextLabel", frame)
-title.Text = "QuanCheaterVN Class Viewer"
+title.Text = "QuanCheaterVN Item Viewer"
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -36,7 +37,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 
 local searchBox = Instance.new("TextBox", frame)
-searchBox.PlaceholderText = "Tìm class..."
+searchBox.PlaceholderText = "Tìm item..."
 searchBox.Size = UDim2.new(1, -10, 0, 25)
 searchBox.Position = UDim2.new(0, 5, 0, 30)
 searchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -45,93 +46,68 @@ searchBox.Font = Enum.Font.Gotham
 searchBox.TextSize = 14
 searchBox.BorderSizePixel = 0
 
-local resetAll = Instance.new("TextButton", frame)
-resetAll.Text = "Reset ALL"
-resetAll.Size = UDim2.new(0, 100, 0, 28)
-resetAll.Position = UDim2.new(0, 5, 0, 60)
-resetAll.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-resetAll.TextColor3 = Color3.new(1, 1, 1)
-resetAll.Font = Enum.Font.Gotham
-resetAll.TextSize = 13
-resetAll.BorderSizePixel = 0
-
-local saveSet = Instance.new("TextButton", frame)
-saveSet.Text = "Lưu đã set"
-saveSet.Size = UDim2.new(0, 100, 0, 28)
-saveSet.Position = UDim2.new(0, 115, 0, 60)
-saveSet.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
-saveSet.TextColor3 = Color3.new(1, 1, 1)
-saveSet.Font = Enum.Font.Gotham
-saveSet.TextSize = 13
-saveSet.BorderSizePixel = 0
-
 local scroll = Instance.new("ScrollingFrame", frame)
-scroll.Size = UDim2.new(1, -10, 1, -100)
-scroll.Position = UDim2.new(0, 5, 0, 95)
+scroll.Size = UDim2.new(1, -10, 1, -65)
+scroll.Position = UDim2.new(0, 5, 0, 60)
 scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 scroll.ScrollBarThickness = 6
 scroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 scroll.BorderSizePixel = 0
 
-local currentHighlights, buttons = {}, {}
+local currentHighlights = {}
+local buttons = {}
+local DrawingItems = {}
 
-local function clearHighlights(className)
-	for _, obj in pairs(currentHighlights[className] or {}) do
+local function clearHighlights()
+	for _, obj in pairs(currentHighlights) do
 		if obj:IsA("BasePart") then
 			obj.Material = Enum.Material.Plastic
 			obj.Transparency = 0
 		end
 	end
-	currentHighlights[className] = {}
-end
+	currentHighlights = {}
 
-local function resetAllHighlights()
-	for k in pairs(currentHighlights) do
-		clearHighlights(k)
+	for _, drawings in pairs(DrawingItems) do
+		for _, d in pairs(drawings) do
+			if d.Remove then d:Remove() end
+		end
 	end
+	DrawingItems = {}
 end
 
-local function highlightClass(className, objects)
-	clearHighlights(className)
-	currentHighlights[className] = {}
+local function highlightItem(name, obj)
+	clearHighlights()
 
-	for _, obj in ipairs(objects) do
-		if obj:IsA("BasePart") then
-			obj.Material = Enum.Material.Neon
-			obj.Color = Color3.fromRGB(0, 180, 255)
-			obj.Transparency = 0.2
-			table.insert(currentHighlights[className], obj)
-		elseif obj:IsA("Model") then
-			for _, part in ipairs(obj:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Material = Enum.Material.Neon
-					part.Color = Color3.fromRGB(0, 180, 255)
-					part.Transparency = 0.2
-					table.insert(currentHighlights[className], part)
-				end
-			end
+	local part
+	if obj:IsA("BasePart") then
+		part = obj
+	elseif obj:IsA("Model") then
+		part = obj:FindFirstChildWhichIsA("BasePart")
+	end
+
+	if part then
+		part.Material = Enum.Material.Neon
+		part.Color = Color3.fromRGB(0, 255, 0)
+		part.Transparency = 0.2
+		currentHighlights[name] = part
+
+		-- 🟢 Teleport đến item
+		local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			root.CFrame = CFrame.new(part.Position + Vector3.new(0, 5, 0))
 		end
 	end
 end
 
-resetAll.MouseButton1Click:Connect(resetAllHighlights)
-
-local function collectClasses()
+local function collectItems()
 	local map = {}
-	for _, obj in ipairs(game:GetDescendants()) do
-		local cls = obj.ClassName
-		if not map[cls] then map[cls] = {} end
-		table.insert(map[cls], obj)
-	end
-
-	map["Player"] = {}
-	map["NPC"] = {}
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p.Character then table.insert(map["Player"], p.Character) end
-	end
 	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and not Players:GetPlayerFromCharacter(obj) then
-			table.insert(map["NPC"], obj)
+		if obj:IsA("BasePart") or obj:IsA("Model") then
+			if obj:FindFirstChildWhichIsA("ProximityPrompt") or obj:FindFirstChildWhichIsA("ClickDetector") then
+				local key = obj.Name
+				if not map[key] then map[key] = {} end
+				table.insert(map[key], obj)
+			end
 		end
 	end
 	return map
@@ -142,41 +118,27 @@ local function updateSearch(keyword)
 	buttons = {}
 
 	local y = 0
-	local classMap = collectClasses()
+	local itemMap = collectItems()
 
-	for className, objects in pairs(classMap) do
-		if keyword == "" or className:lower():find(keyword:lower()) then
+	for itemName, objs in pairs(itemMap) do
+		if keyword == "" or itemName:lower():find(keyword:lower()) then
 			local row = Instance.new("Frame", scroll)
 			row.Size = UDim2.new(1, 0, 0, 28)
 			row.Position = UDim2.new(0, 0, 0, y)
 			row.BackgroundTransparency = 1
 
-			local classBtn = Instance.new("TextButton", row)
-			classBtn.Size = UDim2.new(1, -110, 0, 28)
-			classBtn.Position = UDim2.new(0, 0, 0, 0)
-			classBtn.Text = className .. " [" .. tostring(#objects) .. "]"
-			classBtn.Font = Enum.Font.Gotham
-			classBtn.TextSize = 13
-			classBtn.TextColor3 = Color3.new(1, 1, 1)
-			classBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-			classBtn.BorderSizePixel = 0
+			local btn = Instance.new("TextButton", row)
+			btn.Size = UDim2.new(1, 0, 0, 28)
+			btn.Position = UDim2.new(0, 0, 0, 0)
+			btn.Text = itemName .. " [" .. tostring(#objs) .. "]"
+			btn.Font = Enum.Font.Gotham
+			btn.TextSize = 13
+			btn.TextColor3 = Color3.new(1, 1, 1)
+			btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+			btn.BorderSizePixel = 0
 
-			local resetBtn = Instance.new("TextButton", row)
-			resetBtn.Size = UDim2.new(0, 100, 0, 28)
-			resetBtn.Position = UDim2.new(1, -100, 0, 0)
-			resetBtn.Text = "Reset"
-			resetBtn.Font = Enum.Font.Gotham
-			resetBtn.TextSize = 13
-			resetBtn.TextColor3 = Color3.new(1, 1, 1)
-			resetBtn.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
-			resetBtn.BorderSizePixel = 0
-
-			classBtn.MouseButton1Click:Connect(function()
-				highlightClass(className, objects)
-			end)
-
-			resetBtn.MouseButton1Click:Connect(function()
-				clearHighlights(className)
+			btn.MouseButton1Click:Connect(function()
+				highlightItem(itemName, objs[1])
 			end)
 
 			table.insert(buttons, row)
@@ -191,14 +153,52 @@ searchBox:GetPropertyChangedSignal("Text"):Connect(function()
 	updateSearch(searchBox.Text)
 end)
 
-saveSet.MouseButton1Click:Connect(function()
-	local lines = {}
-	for className, objects in pairs(currentHighlights) do
-		if #objects > 0 then
-			table.insert(lines, className)
+updateSearch("")
+
+-- 🎯 ESP Drawing Logic
+RunService.RenderStepped:Connect(function()
+	for _, drawings in pairs(DrawingItems) do
+		for _, d in pairs(drawings) do
+			if d.Remove then d:Remove() end
 		end
 	end
-	writefile("QuanClassSet.txt", table.concat(lines, "\n"))
-end)
+	DrawingItems = {}
 
-updateSearch("")
+	for itemName, obj in pairs(currentHighlights) do
+		local espSet = {}
+		if obj:IsA("BasePart") then
+			local pos = obj.Position
+			local sp, onScreen = Camera:WorldToViewportPoint(pos)
+
+			-- Box
+			local box = Drawing.new("Square")
+			box.Size = Vector2.new(40, 40)
+			box.Position = Vector2.new(sp.X - 20, sp.Y - 20)
+			box.Color = Color3.fromRGB(0, 255, 0)
+			box.Thickness = 2
+			box.Visible = onScreen
+			table.insert(espSet, box)
+
+			-- Line
+			local line = Drawing.new("Line")
+			line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+			line.To = Vector2.new(sp.X, sp.Y)
+			line.Color = Color3.fromRGB(0, 255, 0)
+			line.Thickness = 1.5
+			line.Visible = onScreen
+			table.insert(espSet, line)
+
+			-- Name
+			local txt = Drawing.new("Text")
+			txt.Text = "[ITEM] " .. obj.Name
+			txt.Size = 16
+			txt.Center = true
+			txt.Outline = true
+			txt.Color = Color3.fromRGB(0, 255, 0)
+			txt.Position = Vector2.new(sp.X, sp.Y - 30)
+			txt.Visible = onScreen
+			table.insert(espSet, txt)
+		end
+		DrawingItems[itemName] = espSet
+	end
+end)
