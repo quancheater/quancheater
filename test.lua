@@ -169,6 +169,57 @@ FovCircle.Radius = 100
 FovCircle.Filled = false
 
 
+function anticheatBypassToggle()
+    return true
+end
+
+task.spawn(function()
+    if not anticheatBypassToggle then return end
+
+    local function disableACScripts()
+        for _, obj in ipairs(game:GetDescendants()) do
+            if obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
+                local name = obj.Name:lower()
+                if name:find("anticheat") or name:find("ac") or name:find("kick") or name:find("ban") then
+                    pcall(function()
+                        obj.Disabled = true
+                        obj:Destroy()
+                    end)
+                end
+            end
+        end
+    end
+
+    local function hookKick()
+        local mt = getrawmetatable(game)
+        local oldNamecall = mt.__namecall
+        setreadonly(mt, false)
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            if anticheatBypassToggle() and method == "Kick" or tostring(args[1]):lower():find("kick") then
+                return nil
+            end
+            return oldNamecall(self, unpack(args))
+        end)
+        setreadonly(mt, true)
+    end
+
+    local function constantBypass()
+        while anticheatBypassToggle() do
+            disableACScripts()
+            task.wait(1)
+        end
+    end
+
+    if anticheatBypassToggle() then
+        hookKick()
+        constantBypass()
+    end
+end)
+
+
+
 RunService.RenderStepped:Connect(function()
 	local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
@@ -237,11 +288,10 @@ if noRecoilToggle() then
 end
 
 
-
 if aimbotToggle() then
     local target = nil
     local closestDist = math.huge
-    local maxDist = 250
+    local maxDist = 500
     local fov = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
@@ -255,6 +305,7 @@ if aimbotToggle() then
         return not result or result.Instance:IsDescendantOf(part.Parent)
     end
 
+    -- Tìm enemy gần nhất trong FOV
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and p.Team ~= LP.Team and p.Character then
             local head = p.Character:FindFirstChild("Head")
@@ -277,13 +328,27 @@ if aimbotToggle() then
     end
 
     if target then
-        -- Khóa hướng nhìn chính xác vào đầu target, không lệch
+        -- Khóa camera
         local camPos = Camera.CFrame.Position
-        local headPos = target.Position + Vector3.new(0, 0.05, 0) -- tăng độ chính xác lên trung tâm đầu
+        local headPos = target.Position + Vector3.new(0, 0.05, 0)
         local aimDirection = (headPos - camPos).Unit
         Camera.CFrame = CFrame.lookAt(camPos, camPos + aimDirection)
 
-        -- Tắt recoil và shake để giữ aim cố định
+        -- Magic Bullet: đạn bay thẳng vào đầu enemy
+        local function magicBullet()
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("BasePart") and obj.Name:lower():find("bullet") or obj.Name:lower():find("projectile") then
+                    pcall(function()
+                        obj.CFrame = CFrame.new(obj.Position, target.Position)
+                        obj.Velocity = (target.Position - obj.Position).Unit * 500
+                    end)
+                end
+            end
+        end
+
+        magicBullet()
+
+        -- Tắt recoil & shake
         local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
         if recoil then
             for _, v in ipairs(recoil:GetChildren()) do
@@ -293,7 +358,7 @@ if aimbotToggle() then
             end
         end
 
-        -- Xóa recoil hoặc camera shake script
+        -- Phá recoil/camera shake script
         pcall(function()
             for _, s in ipairs({
                 LP.PlayerScripts:FindFirstChild("GunRecoil"),
@@ -318,6 +383,7 @@ if aimbotToggle() then
         end)
     end
 end
+
 
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
