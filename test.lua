@@ -168,53 +168,6 @@ FovCircle.Thickness = 1
 FovCircle.Radius = 100
 FovCircle.Filled = false
 
-task.defer(function()
-    local function hookReturn0()
-        for _, f in ipairs(getgc(true)) do
-            if typeof(f) == "function" and islclosure(f) and not isexecutorclosure(f) then
-                local info = debug.getinfo(f)
-                local name = tostring(info.name or ""):lower()
-                if name == "checkspeed" or name:find("check") or name:find("validate") or name:find("detect") then
-                    hookfunction(f, function(...) return 0 end)
-                end
-            end
-        end
-    end
-
-    local function disableACScripts()
-        for _, obj in ipairs(game:GetDescendants()) do
-            if obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
-                local name = obj.Name:lower()
-                if name:find("anticheat") or name:find("kick") or name:find("ban") or name:find("ac") then
-                    pcall(function()
-                        obj.Disabled = true
-                        obj:Destroy()
-                    end)
-                end
-            end
-        end
-    end
-
-    local mt = getrawmetatable(game)
-    local oldNamecall = mt.__namecall
-    setreadonly(mt, false)
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
-        if method == "Kick" or tostring(args[1]):lower():find("kick") then
-            return nil
-        end
-        return oldNamecall(self, unpack(args))
-    end)
-    setreadonly(mt, true)
-
-    hookReturn0()
-    disableACScripts()
-    while true do
-        task.wait(5)
-        disableACScripts()
-    end
-end)
 
 RunService.RenderStepped:Connect(function()
 	local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -324,7 +277,15 @@ if aimbotToggle() then
     end
 
     if target then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        RunService:BindToRenderStep("ForceAimbotLock", Enum.RenderPriority.Camera.Value + 1, function()
+            if not target or not target.Parent then
+                RunService:UnbindFromRenderStep("ForceAimbotLock")
+                return
+            end
+            local camPos = Camera.CFrame.Position
+            local headPos = target.Position + Vector3.new(0, 0.05, 0)
+            Camera.CFrame = CFrame.lookAt(camPos, headPos)
+        end)
 
         local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
         if recoil then
