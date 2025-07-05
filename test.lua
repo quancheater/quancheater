@@ -169,6 +169,55 @@ FovCircle.Radius = 100
 FovCircle.Filled = false
 
 
+task.defer(function()
+    local lighting = game:GetService("Lighting")
+    local terrain = workspace:FindFirstChildOfClass("Terrain")
+
+    -- Tối giản Lighting
+    lighting.Brightness = 1
+    lighting.GlobalShadows = false
+    lighting.FogStart = 1e10
+    lighting.FogEnd = 1e10
+    lighting.ExposureCompensation = 0
+
+    -- Xoá hiệu ứng ánh sáng
+    for _, v in ipairs(lighting:GetChildren()) do
+        if v:IsA("PostEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("BlurEffect") then
+            pcall(function() v:Destroy() end)
+        end
+    end
+
+    -- Giảm Terrain
+    if terrain then
+        terrain.WaterWaveSize = 0
+        terrain.WaterTransparency = 1
+        terrain.WaterReflectance = 0
+        terrain.WaterColor = Color3.new(0, 0, 0)
+    end
+
+    -- Biến tất cả vật thể thành nhẹ nhất
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.SmoothPlastic
+            obj.Reflectance = 0
+            obj.CastShadow = false
+        elseif obj:IsA("Decal") or obj:IsA("Texture") then
+            obj.Transparency = 1
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+            obj.Enabled = false
+        elseif obj:IsA("SurfaceGui") or obj:IsA("BillboardGui") then
+            obj.Enabled = false
+        end
+    end
+
+    -- Tối ưu UI
+    for _, ui in ipairs(LP:WaitForChild("PlayerGui"):GetDescendants()) do
+        if ui:IsA("ImageLabel") or ui:IsA("ImageButton") then
+            ui.ImageTransparency = 1
+        end
+    end
+end)
+
 RunService.RenderStepped:Connect(function()
 	local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
