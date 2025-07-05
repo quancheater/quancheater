@@ -169,57 +169,6 @@ FovCircle.Radius = 100
 FovCircle.Filled = false
 
 
-function anticheatBypassToggle()
-    return true
-end
-
-task.spawn(function()
-    if not anticheatBypassToggle then return end
-
-    local function disableACScripts()
-        for _, obj in ipairs(game:GetDescendants()) do
-            if obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
-                local name = obj.Name:lower()
-                if name:find("anticheat") or name:find("ac") or name:find("kick") or name:find("ban") then
-                    pcall(function()
-                        obj.Disabled = true
-                        obj:Destroy()
-                    end)
-                end
-            end
-        end
-    end
-
-    local function hookKick()
-        local mt = getrawmetatable(game)
-        local oldNamecall = mt.__namecall
-        setreadonly(mt, false)
-        mt.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            if anticheatBypassToggle() and method == "Kick" or tostring(args[1]):lower():find("kick") then
-                return nil
-            end
-            return oldNamecall(self, unpack(args))
-        end)
-        setreadonly(mt, true)
-    end
-
-    local function constantBypass()
-        while anticheatBypassToggle() do
-            disableACScripts()
-            task.wait(1)
-        end
-    end
-
-    if anticheatBypassToggle() then
-        hookKick()
-        constantBypass()
-    end
-end)
-
-
-
 RunService.RenderStepped:Connect(function()
 	local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
