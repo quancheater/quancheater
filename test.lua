@@ -315,13 +315,13 @@ if noRecoilToggle() then
 end
 
 
-
 if aimbotToggle() then
     local target = nil
     local closestDist = math.huge
     local maxDist = 250
     local fov = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local aimPos = nil
 
     local function IsVisible(part, model)
         local origin = Camera.CFrame.Position
@@ -335,18 +335,29 @@ if aimbotToggle() then
 
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LP and p.Team ~= LP.Team and p.Character then
-            local head = p.Character:FindFirstChild("Head")
-            local hum = p.Character:FindFirstChild("Humanoid")
-            if head and hum and hum.Health > 0 and IsVisible(head, p.Character) then
+            local char = p.Character
+            local head = char:FindFirstChild("Head")
+            local root = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChild("Humanoid")
+
+            if head and root and hum and hum.Health > 0 and IsVisible(head, char) then
                 local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
                 if dist3D <= maxDist then
                     local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
                     local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
                     local dot = (head.Position - Camera.CFrame.Position).Unit:Dot(Camera.CFrame.LookVector)
+
                     if onScreen and dot > 0 and dist2D <= fov then
                         if dist3D < closestDist then
-                            target = head
+                            target = char
                             closestDist = dist3D
+
+                            -- Nếu lệch tâm nhiều thì aim cổ
+                            if dist2D > 100 then
+                                aimPos = root.Position + Vector3.new(0, 1.1, 0)  -- Aim cổ
+                            else
+                                aimPos = head.Position + Vector3.new(0, 0.05, 0) -- Aim đầu
+                            end
                         end
                     end
                 end
@@ -355,15 +366,14 @@ if aimbotToggle() then
     end
 
     RunService:UnbindFromRenderStep("ForceAimbotLock")
-    if target and target.Parent then
+    if target and aimPos then
         RunService:BindToRenderStep("ForceAimbotLock", Enum.RenderPriority.Camera.Value + 1, function()
-            if not target or not target.Parent or target.Parent:FindFirstChild("Humanoid") and target.Parent.Humanoid.Health <= 0 then
+            if not target or not target:FindFirstChild("Humanoid") or target.Humanoid.Health <= 0 then
                 RunService:UnbindFromRenderStep("ForceAimbotLock")
                 return
             end
             local camPos = Camera.CFrame.Position
-            local headPos = target.Position + Vector3.new(0, 0.05, 0)
-            Camera.CFrame = CFrame.lookAt(camPos, headPos)
+            Camera.CFrame = CFrame.lookAt(camPos, aimPos)
         end)
 
         local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
@@ -398,6 +408,7 @@ if aimbotToggle() then
     end
 end
 
+
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
     local direction = (part.Position - origin)
@@ -409,13 +420,38 @@ local function IsVisible(part)
 end
 
 if espToggle() or mobToggle() then
-    playerESPCount, mobESPCount = 0, 0
+    playerESPCount = 0
+    mobESPCount = 0
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+            if not (p.Team and LP.Team and p.Team == LP.Team) then
+                local hum = p.Character.Humanoid
+                local hrp = p.Character.HumanoidRootPart
+                local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
+                if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                    playerESPCount += 1
+                end
+            end
+        end
+    end
+
+    for _, mob in pairs(workspace:GetDescendants()) do
+        if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
+            local hum = mob.Humanoid
+            local hrp = mob.HumanoidRootPart
+            local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
+            if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                mobESPCount += 1
+            end
+        end
+    end
+
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local topCenter = Vector2.new(screenCenter.X, 0)
     local alertMap = {}
     local alertRadius = 60
 
-    -- Clear old entities
     for ent, ed in pairs(ESPdata) do
         if not ent or not ent:IsDescendantOf(workspace) then
             for _, v in pairs(ed) do
@@ -438,23 +474,23 @@ if espToggle() or mobToggle() then
     end
 
     local function handleESP(target, isPlayer)
-        local hum = target:FindFirstChild("Humanoid")
-        local hrp = target:FindFirstChild("HumanoidRootPart")
-        if not hum or not hrp then return end
-
-        local hp, dist = hum.Health, (hrp.Position - Camera.CFrame.Position).Magnitude
-        if dist > maxESPDistance or hp <= 0 or hp == math.huge then return end
+        local hum = target.Humanoid
+        local hrp = target.HumanoidRootPart
+        local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
+        if distance > maxESPDistance or hum.Health <= 0 or hum.Health == math.huge then return end
 
         local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
         local dir = (hrp.Position - Camera.CFrame.Position).Unit
         local dot = dir:Dot(Camera.CFrame.LookVector)
 
-        if onScreen and dot > 0 then
+        local toggleCheck = isPlayer and espToggle() or mobToggle()
+        if toggleCheck and onScreen and dot > 0 then
             if not ESPdata[target] then initESP(target) end
             local ed = ESPdata[target]
-            local color = IsVisible(hrp) and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+            local visible = IsVisible(hrp)
+            local color = visible and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
 
-            local sy = math.clamp(2000 / dist, 30, 200)
+            local sy = math.clamp(2000 / distance, 30, 200)
             local sx = sy / 2
 
             ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
@@ -485,7 +521,7 @@ if espToggle() or mobToggle() then
                 ed.dist.Center = true
             end
             ed.dist.Position = Vector2.new(sp.X, sp.Y + sy / 2 + 10)
-            ed.dist.Text = math.floor(dist) .. "m"
+            ed.dist.Text = math.floor(distance) .. "m"
             ed.dist.Visible = true
 
             if isPlayer then
@@ -512,68 +548,67 @@ if espToggle() or mobToggle() then
         end
     end
 
-    -- Players
-    for _, p in ipairs(Players:GetPlayers()) do
+    for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
             if not (p.Team and LP.Team and p.Team == LP.Team) then
                 handleESP(p.Character, true)
-                playerESPCount += 1
             end
         end
     end
 
-    -- Mobs
-    for _, mob in ipairs(workspace.Mobs and workspace.Mobs:GetChildren() or workspace:GetChildren()) do
+    for _, mob in pairs(workspace:GetDescendants()) do
         if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
             handleESP(mob, false)
-            mobESPCount += 1
         end
     end
 
-    -- Ammo Boxes
-    for _, box in ipairs(workspace:GetChildren()) do
-        if box.Name == "AmmoBox2" and box:IsA("MeshPart") then
-            local pos = box.Position
-            local dist = (pos - Camera.CFrame.Position).Magnitude
-            if dist <= maxESPDistance then
-                if not ESPdata[box] then
-                    ESPdata[box] = {
-                        name = Drawing.new("Text"),
-                        dist = Drawing.new("Text")
-                    }
-                    ESPdata[box].name.Size = 14
-                    ESPdata[box].name.Color = Color3.fromRGB(255, 255, 0)
-                    ESPdata[box].name.Outline = true
-                    ESPdata[box].name.Center = true
+for _, box in ipairs(workspace:GetChildren()) do
+    if box.Name == "AmmoBox2" and box:IsA("MeshPart") then
+        local pos = box.Position
+        local dist = (pos - Camera.CFrame.Position).Magnitude
+        if dist <= maxESPDistance then
+            if not ESPdata[box] then
+                local txtName = Drawing.new("Text")
+                txtName.Size = 14
+                txtName.Color = Color3.fromRGB(255, 255, 0)
+                txtName.Outline = true
+                txtName.Center = true
 
-                    ESPdata[box].dist.Size = 13
-                    ESPdata[box].dist.Color = Color3.fromRGB(255, 255, 255)
-                    ESPdata[box].dist.Outline = true
-                    ESPdata[box].dist.Center = true
-                end
+                local txtDist = Drawing.new("Text")
+                txtDist.Size = 13
+                txtDist.Color = Color3.fromRGB(255, 255, 255)
+                txtDist.Outline = true
+                txtDist.Center = true
 
-                local sp, onScreen = Camera:WorldToViewportPoint(pos)
-                ESPdata[box].name.Text = "[AmmoBox]"
-                ESPdata[box].name.Position = Vector2.new(sp.X, sp.Y)
-                ESPdata[box].name.Visible = onScreen
+                ESPdata[box] = {
+                    name = txtName,
+                    dist = txtDist
+                }
+            end
 
-                ESPdata[box].dist.Text = math.floor(dist) .. "m"
-                ESPdata[box].dist.Position = Vector2.new(sp.X, sp.Y + 15)
-                ESPdata[box].dist.Visible = onScreen
-            else
-                if ESPdata[box] then
-                    for _, v in pairs(ESPdata[box]) do pcall(function() v:Remove() end) end
-                    ESPdata[box] = nil
-                end
+            local sp, onScreen = Camera:WorldToViewportPoint(pos)
+            local name = ESPdata[box].name
+            local distText = ESPdata[box].dist
+
+            name.Text = "[AmmoBox]"
+            name.Position = Vector2.new(sp.X, sp.Y)
+            name.Visible = onScreen
+
+            distText.Text = math.floor(dist) .. "m"
+            distText.Position = Vector2.new(sp.X, sp.Y + 15)
+            distText.Visible = onScreen
+        else
+            if ESPdata[box] then
+                for _, v in pairs(ESPdata[box]) do pcall(function() v:Remove() end) end
+                ESPdata[box] = nil
             end
         end
     end
+end
 
-    -- Counter
-    counter.Text = "ESP: " .. playerESPCount .. " | MOB: " .. mobESPCount
+    counter.Text = "ESP: " .. playerESPCount .. "  |  MOB: " .. mobESPCount
     counter.Visible = true
 
-    -- Alerts
     for angle, _ in pairs(alertMap) do
         local dotPos = screenCenter + Vector2.new(math.cos(angle), math.sin(angle)) * alertRadius
         local dot = Drawing.new("Circle")
@@ -584,8 +619,8 @@ if espToggle() or mobToggle() then
         dot.Visible = true
         task.delay(0.3, function() dot:Remove() end)
     end
+
 else
-    -- ESP OFF
     for ent, ed in pairs(ESPdata) do
         for _, v in pairs(ed) do
             if typeof(v) == "table" then
@@ -598,6 +633,7 @@ else
     ESPdata = {}
     if counter then counter.Visible = false end
 end
+
 
 if itemPickToggle() then
     local LP = game:GetService("Players").LocalPlayer
