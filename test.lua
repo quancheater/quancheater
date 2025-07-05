@@ -168,8 +168,16 @@ FovCircle.Thickness = 1
 FovCircle.Radius = 100
 FovCircle.Filled = false
 
-
 task.defer(function()
+    -- Unlock FPS (nếu đang bị giới hạn)
+    pcall(function()
+        if setfpscap then
+            setfpscap(120)
+        elseif set_fps_cap then
+            set_fps_cap(120)
+        end
+    end)
+
     local lighting = game:GetService("Lighting")
     local terrain = workspace:FindFirstChildOfClass("Terrain")
 
@@ -180,14 +188,14 @@ task.defer(function()
     lighting.FogEnd = 1e10
     lighting.ExposureCompensation = 0
 
-    -- Xoá hiệu ứng ánh sáng
+    -- Xoá tất cả hiệu ứng ánh sáng
     for _, v in ipairs(lighting:GetChildren()) do
         if v:IsA("PostEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("BlurEffect") then
             pcall(function() v:Destroy() end)
         end
     end
 
-    -- Giảm Terrain
+    -- Giảm nước và Terrain
     if terrain then
         terrain.WaterWaveSize = 0
         terrain.WaterTransparency = 1
@@ -195,7 +203,7 @@ task.defer(function()
         terrain.WaterColor = Color3.new(0, 0, 0)
     end
 
-    -- Biến tất cả vật thể thành nhẹ nhất
+    -- Tối ưu toàn bộ vật thể
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
             obj.Material = Enum.Material.SmoothPlastic
@@ -205,18 +213,31 @@ task.defer(function()
             obj.Transparency = 1
         elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
             obj.Enabled = false
-        elseif obj:IsA("SurfaceGui") or obj:IsA("BillboardGui") then
-            obj.Enabled = false
         end
     end
 
-    -- Tối ưu UI
-    for _, ui in ipairs(LP:WaitForChild("PlayerGui"):GetDescendants()) do
-        if ui:IsA("ImageLabel") or ui:IsA("ImageButton") then
-            ui.ImageTransparency = 1
+    -- Xoá Recoil hoặc CameraShake script (anti shake)
+    pcall(function()
+        for _, s in ipairs({
+            LP:FindFirstChild("PlayerScripts") and LP.PlayerScripts:FindFirstChild("Recoil"),
+            LP:FindFirstChild("PlayerScripts") and LP.PlayerScripts:FindFirstChild("CameraShake"),
+            LP.Character and LP.Character:FindFirstChild("CameraShake"),
+            LP.Character and LP.Character:FindFirstChild("Recoil")
+        }) do
+            if s then
+                if s:IsA("ModuleScript") then
+                    local m = require(s)
+                    for k, v in pairs(m) do
+                        if typeof(v) == "function" then m[k] = function() end end
+                    end
+                else
+                    s:Destroy()
+                end
+            end
         end
-    end
+    end)
 end)
+
 
 RunService.RenderStepped:Connect(function()
 	local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
