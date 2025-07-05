@@ -552,8 +552,8 @@ if espToggle() or mobToggle() then
     end
 
 for _, box in ipairs(workspace:GetChildren()) do
-    if box.Name == "AmmoBox2" and box:IsA("Model") and box:FindFirstChild("PrimaryPart") then
-        local pos = box.PrimaryPart.Position
+    if box.Name == "AmmoBox2" and box:IsA("MeshPart") then
+        local pos = box.Position
         local dist = (pos - Camera.CFrame.Position).Magnitude
         if dist <= maxESPDistance then
             if not ESPdata[box] then
