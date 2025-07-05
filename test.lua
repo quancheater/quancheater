@@ -408,221 +408,125 @@ local function IsVisible(part)
     return not result or result.Instance:IsDescendantOf(part.Parent)
 end
 
+local lastUpdate = 0
+local updateRate = 0.1
+
 if espToggle() or mobToggle() then
+    if tick() - lastUpdate < updateRate then return end
+    lastUpdate = tick()
+
     playerESPCount = 0
     mobESPCount = 0
 
+    -- Clear all visibility
+    for ent, ed in pairs(ESPdata) do
+        for _, v in pairs(ed) do
+            if typeof(v) == "table" then
+                for _, sub in pairs(v) do sub.Visible = false end
+            else
+                v.Visible = false
+            end
+        end
+    end
+
+    local function renderESP(ent, nameText, color)
+        if not ent or not ent.Position then return end
+        local sp, onScreen = Camera:WorldToViewportPoint(ent.Position)
+        if not onScreen then return end
+        local dist = (ent.Position - Camera.CFrame.Position).Magnitude
+        if dist > maxESPDistance then return end
+
+        if not ESPdata[ent] then
+            ESPdata[ent] = {
+                name = Drawing.new("Text"),
+                dist = Drawing.new("Text")
+            }
+            ESPdata[ent].name.Size = 14
+            ESPdata[ent].name.Color = color
+            ESPdata[ent].name.Outline = true
+            ESPdata[ent].name.Center = true
+
+            ESPdata[ent].dist.Size = 13
+            ESPdata[ent].dist.Color = Color3.fromRGB(255, 255, 255)
+            ESPdata[ent].dist.Outline = true
+            ESPdata[ent].dist.Center = true
+        end
+
+        local ed = ESPdata[ent]
+        ed.name.Text = nameText
+        ed.name.Position = Vector2.new(sp.X, sp.Y)
+        ed.name.Visible = true
+
+        ed.dist.Text = math.floor(dist) .. "m"
+        ed.dist.Position = Vector2.new(sp.X, sp.Y + 15)
+        ed.dist.Visible = true
+    end
+
+    -- Players
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
-            if not (p.Team and LP.Team and p.Team == LP.Team) then
-                local hum = p.Character.Humanoid
-                local hrp = p.Character.HumanoidRootPart
+        if p ~= LP and p.Character then
+            local hum = p.Character:FindFirstChild("Humanoid")
+            local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+            if hum and hrp and hum.Health > 0 and hum.Health < math.huge then
                 local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
-                if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
+                if distance <= maxESPDistance and not (p.Team and LP.Team and p.Team == LP.Team) then
                     playerESPCount += 1
+                    renderESP(hrp, p.Name, Color3.fromRGB(0, 255, 0))
                 end
             end
         end
     end
 
+    -- Mobs
     for _, mob in pairs(workspace:GetDescendants()) do
         if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
             local hum = mob.Humanoid
             local hrp = mob.HumanoidRootPart
-            local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
-            if distance <= maxESPDistance and hum.Health > 0 and hum.Health < math.huge then
-                mobESPCount += 1
-            end
-        end
-    end
-
-    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local topCenter = Vector2.new(screenCenter.X, 0)
-    local alertMap = {}
-    local alertRadius = 60
-
-    for ent, ed in pairs(ESPdata) do
-        if not ent or not ent:IsDescendantOf(workspace) then
-            for _, v in pairs(ed) do
-                if typeof(v) == "table" then
-                    for _, sub in pairs(v) do pcall(function() sub:Remove() end) end
-                else
-                    pcall(function() v:Remove() end)
-                end
-            end
-            ESPdata[ent] = nil
-        else
-            for _, v in pairs(ed) do
-                if typeof(v) == "table" then
-                    for _, sub in pairs(v) do sub.Visible = false end
-                else
-                    v.Visible = false
+            if hum.Health > 0 and hum.Health < math.huge then
+                local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
+                if distance <= maxESPDistance then
+                    mobESPCount += 1
+                    renderESP(hrp, mob.Name, Color3.fromRGB(255, 0, 0))
                 end
             end
         end
     end
 
-    local function handleESP(target, isPlayer)
-        local hum = target.Humanoid
-        local hrp = target.HumanoidRootPart
-        local distance = (hrp.Position - Camera.CFrame.Position).Magnitude
-        if distance > maxESPDistance or hum.Health <= 0 or hum.Health == math.huge then return end
-
-        local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-        local dir = (hrp.Position - Camera.CFrame.Position).Unit
-        local dot = dir:Dot(Camera.CFrame.LookVector)
-
-        local toggleCheck = isPlayer and espToggle() or mobToggle()
-        if toggleCheck and onScreen and dot > 0 then
-            if not ESPdata[target] then initESP(target) end
-            local ed = ESPdata[target]
-            local visible = IsVisible(hrp)
-            local color = visible and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-
-            local sy = math.clamp(2000 / distance, 30, 200)
-            local sx = sy / 2
-
-            ed.box.Position = Vector2.new(sp.X - sx / 2, sp.Y - sy / 2)
-            ed.box.Size = Vector2.new(sx, sy)
-            ed.box.Color = color
-            ed.box.Visible = true
-
-            ed.line.From = topCenter
-            ed.line.To = Vector2.new(sp.X, sp.Y)
-            ed.line.Color = color
-            ed.line.Visible = true
-
-            ed.name.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 15)
-            ed.name.Text = target.Name
-            ed.name.Color = color
-            ed.name.Visible = true
-
-            ed.hp.Position = Vector2.new(sp.X, sp.Y - sy / 2 - 30)
-            ed.hp.Text = "HP: " .. math.floor(hum.Health)
-            ed.hp.Color = color
-            ed.hp.Visible = true
-
-            if not ed.dist then
-                ed.dist = Drawing.new("Text")
-                ed.dist.Size = 17
-                ed.dist.Color = Color3.new(1, 1, 1)
-                ed.dist.Outline = true
-                ed.dist.Center = true
-            end
-            ed.dist.Position = Vector2.new(sp.X, sp.Y + sy / 2 + 10)
-            ed.dist.Text = math.floor(distance) .. "m"
-            ed.dist.Visible = true
-
-            if isPlayer then
-                local joints = getJoints(target)
-                for i, pair in ipairs(skeletonLines) do
-                    local a, b = joints[pair[1]], joints[pair[2]]
-                    local sl = ed.skeleton[i]
-                    if a and b then
-                        sl.From = a
-                        sl.To = b
-                        sl.Color = color
-                        sl.Visible = true
-                    else
-                        sl.Visible = false
-                    end
-                end
-            else
-                for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
-            end
-        else
-            local angle = math.atan2(dir.Z, dir.X)
-            local rounded = math.floor(angle * 10) / 10
-            alertMap[rounded] = true
+    -- AmmoBox2
+    for _, box in ipairs(workspace:GetChildren()) do
+        if box.Name == "AmmoBox2" and box:IsA("MeshPart") then
+            renderESP(box, "[AmmoBox]", Color3.fromRGB(255, 255, 0))
         end
     end
 
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
-            if not (p.Team and LP.Team and p.Team == LP.Team) then
-                handleESP(p.Character, true)
-            end
-        end
+    -- Counter
+    if not counter then
+        counter = Drawing.new("Text")
+        counter.Size = 17
+        counter.Color = Color3.fromRGB(255, 255, 255)
+        counter.Outline = true
+        counter.Center = true
+        counter.Position = Vector2.new(100, 50)
     end
-
-    for _, mob in pairs(workspace:GetDescendants()) do
-        if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
-            handleESP(mob, false)
-        end
-    end
-
-for _, box in ipairs(workspace:GetChildren()) do
-    if box.Name == "AmmoBox2" and box:IsA("MeshPart") then
-        local pos = box.Position
-        local dist = (pos - Camera.CFrame.Position).Magnitude
-        if dist <= maxESPDistance then
-            if not ESPdata[box] then
-                local txtName = Drawing.new("Text")
-                txtName.Size = 14
-                txtName.Color = Color3.fromRGB(255, 255, 0)
-                txtName.Outline = true
-                txtName.Center = true
-
-                local txtDist = Drawing.new("Text")
-                txtDist.Size = 13
-                txtDist.Color = Color3.fromRGB(255, 255, 255)
-                txtDist.Outline = true
-                txtDist.Center = true
-
-                ESPdata[box] = {
-                    name = txtName,
-                    dist = txtDist
-                }
-            end
-
-            local sp, onScreen = Camera:WorldToViewportPoint(pos)
-            local name = ESPdata[box].name
-            local distText = ESPdata[box].dist
-
-            name.Text = "[AmmoBox]"
-            name.Position = Vector2.new(sp.X, sp.Y)
-            name.Visible = onScreen
-
-            distText.Text = math.floor(dist) .. "m"
-            distText.Position = Vector2.new(sp.X, sp.Y + 15)
-            distText.Visible = onScreen
-        else
-            if ESPdata[box] then
-                for _, v in pairs(ESPdata[box]) do pcall(function() v:Remove() end) end
-                ESPdata[box] = nil
-            end
-        end
-    end
-end
-
-    counter.Text = "ESP: " .. playerESPCount .. "  |  MOB: " .. mobESPCount
+    counter.Text = "ESP: " .. playerESPCount .. " | MOB: " .. mobESPCount
     counter.Visible = true
 
-    for angle, _ in pairs(alertMap) do
-        local dotPos = screenCenter + Vector2.new(math.cos(angle), math.sin(angle)) * alertRadius
-        local dot = Drawing.new("Circle")
-        dot.Position = dotPos
-        dot.Radius = 6
-        dot.Filled = true
-        dot.Color = Color3.fromHSV(angle % 1, 1, 1)
-        dot.Visible = true
-        task.delay(0.3, function() dot:Remove() end)
-    end
-
 else
+    -- Clean up ESP
     for ent, ed in pairs(ESPdata) do
         for _, v in pairs(ed) do
-            if typeof(v) == "table" then
-                for _, sub in pairs(v) do pcall(function() sub:Remove() end) end
-            else
-                pcall(function() v:Remove() end)
-            end
+            pcall(function()
+                if typeof(v) == "table" then
+                    for _, sub in pairs(v) do sub:Remove() end
+                else
+                    v:Remove()
+                end
+            end)
         end
     end
     ESPdata = {}
     if counter then counter.Visible = false end
 end
-
 
 if itemPickToggle() then
     local LP = game:GetService("Players").LocalPlayer
