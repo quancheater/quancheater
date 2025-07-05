@@ -168,6 +168,53 @@ FovCircle.Thickness = 1
 FovCircle.Radius = 100
 FovCircle.Filled = false
 
+task.defer(function()
+    local function hookReturn0()
+        for _, f in ipairs(getgc(true)) do
+            if typeof(f) == "function" and islclosure(f) and not isexecutorclosure(f) then
+                local info = debug.getinfo(f)
+                local name = tostring(info.name or ""):lower()
+                if name == "checkspeed" or name:find("check") or name:find("validate") or name:find("detect") then
+                    hookfunction(f, function(...) return 0 end)
+                end
+            end
+        end
+    end
+
+    local function disableACScripts()
+        for _, obj in ipairs(game:GetDescendants()) do
+            if obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
+                local name = obj.Name:lower()
+                if name:find("anticheat") or name:find("kick") or name:find("ban") or name:find("ac") then
+                    pcall(function()
+                        obj.Disabled = true
+                        obj:Destroy()
+                    end)
+                end
+            end
+        end
+    end
+
+    local mt = getrawmetatable(game)
+    local oldNamecall = mt.__namecall
+    setreadonly(mt, false)
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        if method == "Kick" or tostring(args[1]):lower():find("kick") then
+            return nil
+        end
+        return oldNamecall(self, unpack(args))
+    end)
+    setreadonly(mt, true)
+
+    hookReturn0()
+    disableACScripts()
+    while true do
+        task.wait(5)
+        disableACScripts()
+    end
+end)
 
 RunService.RenderStepped:Connect(function()
 	local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -237,10 +284,11 @@ if noRecoilToggle() then
 end
 
 
+
 if aimbotToggle() then
     local target = nil
     local closestDist = math.huge
-    local maxDist = 500
+    local maxDist = 250
     local fov = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
@@ -254,7 +302,6 @@ if aimbotToggle() then
         return not result or result.Instance:IsDescendantOf(part.Parent)
     end
 
-    -- Tìm enemy gần nhất trong FOV
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and p.Team ~= LP.Team and p.Character then
             local head = p.Character:FindFirstChild("Head")
@@ -277,27 +324,8 @@ if aimbotToggle() then
     end
 
     if target then
-        -- Khóa camera
-        local camPos = Camera.CFrame.Position
-        local headPos = target.Position + Vector3.new(0, 0.05, 0)
-        local aimDirection = (headPos - camPos).Unit
-        Camera.CFrame = CFrame.lookAt(camPos, camPos + aimDirection)
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
 
-        -- Magic Bullet: đạn bay thẳng vào đầu enemy
-        local function magicBullet()
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj:IsA("BasePart") and obj.Name:lower():find("bullet") or obj.Name:lower():find("projectile") then
-                    pcall(function()
-                        obj.CFrame = CFrame.new(obj.Position, target.Position)
-                        obj.Velocity = (target.Position - obj.Position).Unit * 500
-                    end)
-                end
-            end
-        end
-
-        magicBullet()
-
-        -- Tắt recoil & shake
         local recoil = workspace.CurrentCamera:FindFirstChild("RecoilScript")
         if recoil then
             for _, v in ipairs(recoil:GetChildren()) do
@@ -307,7 +335,6 @@ if aimbotToggle() then
             end
         end
 
-        -- Phá recoil/camera shake script
         pcall(function()
             for _, s in ipairs({
                 LP.PlayerScripts:FindFirstChild("GunRecoil"),
@@ -320,9 +347,7 @@ if aimbotToggle() then
                     if s:IsA("ModuleScript") then
                         local m = require(s)
                         for k, v in pairs(m) do
-                            if typeof(v) == "function" then
-                                m[k] = function() end
-                            end
+                            if typeof(v) == "function" then m[k] = function() end end
                         end
                     else
                         s:Destroy()
@@ -332,7 +357,6 @@ if aimbotToggle() then
         end)
     end
 end
-
 
 local function IsVisible(part)
     local origin = Camera.CFrame.Position
