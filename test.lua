@@ -168,34 +168,30 @@ FovCircle.Thickness = 1
 FovCircle.Radius = 100
 FovCircle.Filled = false
 
+
 task.defer(function()
-    -- Unlock FPS (nếu đang bị giới hạn)
+    -- FPS unlock
     pcall(function()
-        if setfpscap then
-            setfpscap(120)
-        elseif set_fps_cap then
-            set_fps_cap(120)
-        end
+        if setfpscap then setfpscap(120)
+        elseif set_fps_cap then set_fps_cap(120) end
     end)
 
     local lighting = game:GetService("Lighting")
     local terrain = workspace:FindFirstChildOfClass("Terrain")
 
-    -- Tối giản Lighting
     lighting.Brightness = 1
     lighting.GlobalShadows = false
     lighting.FogStart = 1e10
     lighting.FogEnd = 1e10
     lighting.ExposureCompensation = 0
 
-    -- Xoá tất cả hiệu ứng ánh sáng
     for _, v in ipairs(lighting:GetChildren()) do
-        if v:IsA("PostEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("BlurEffect") then
+        if v:IsA("PostEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect")
+        or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("BlurEffect") then
             pcall(function() v:Destroy() end)
         end
     end
 
-    -- Giảm nước và Terrain
     if terrain then
         terrain.WaterWaveSize = 0
         terrain.WaterTransparency = 1
@@ -203,7 +199,6 @@ task.defer(function()
         terrain.WaterColor = Color3.new(0, 0, 0)
     end
 
-    -- Tối ưu toàn bộ vật thể
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
             obj.Material = Enum.Material.SmoothPlastic
@@ -213,10 +208,24 @@ task.defer(function()
             obj.Transparency = 1
         elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
             obj.Enabled = false
+        elseif obj:IsA("Clouds") or obj.Name:lower():find("weather") or obj.Name:lower():find("rain") or obj.Name:lower():find("storm") then
+            pcall(function() obj:Destroy() end)
+        elseif obj:IsA("Sound") and obj.Name:lower():match("rain") or obj.Name:lower():match("storm") or obj.Name:lower():match("wind") then
+            pcall(function() obj:Destroy() end)
         end
     end
 
-    -- Xoá Recoil hoặc CameraShake script (anti shake)
+    -- Xoá script thời tiết nếu có
+    for _, s in ipairs(workspace:GetDescendants()) do
+        if s:IsA("Script") or s:IsA("LocalScript") then
+            local name = s.Name:lower()
+            if name:match("weather") or name:match("storm") or name:match("rain") or name:match("cloud") then
+                pcall(function() s:Destroy() end)
+            end
+        end
+    end
+
+    -- Xoá recoil/camera shake
     pcall(function()
         for _, s in ipairs({
             LP:FindFirstChild("PlayerScripts") and LP.PlayerScripts:FindFirstChild("Recoil"),
@@ -237,7 +246,6 @@ task.defer(function()
         end
     end)
 end)
-
 
 RunService.RenderStepped:Connect(function()
 	local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -444,12 +452,13 @@ if espToggle() or mobToggle() then
             end
             ESPdata[ent] = nil
         else
-            ed.box.Visible = false
-            ed.line.Visible = false
-            ed.name.Visible = false
-            ed.hp.Visible = false
-            if ed.dist then ed.dist.Visible = false end
-            for _, sl in ipairs(ed.skeleton) do sl.Visible = false end
+            for _, v in pairs(ed) do
+                if typeof(v) == "table" then
+                    for _, sub in pairs(v) do sub.Visible = false end
+                else
+                    v.Visible = false
+                end
+            end
         end
     end
 
@@ -542,6 +551,50 @@ if espToggle() or mobToggle() then
         end
     end
 
+for _, box in ipairs(workspace:GetChildren()) do
+    if box.Name == "AmmoBox2" and box:IsA("Model") and box:FindFirstChild("PrimaryPart") then
+        local pos = box.PrimaryPart.Position
+        local dist = (pos - Camera.CFrame.Position).Magnitude
+        if dist <= maxESPDistance then
+            if not ESPdata[box] then
+                local txtName = Drawing.new("Text")
+                txtName.Size = 14
+                txtName.Color = Color3.fromRGB(255, 255, 0)
+                txtName.Outline = true
+                txtName.Center = true
+
+                local txtDist = Drawing.new("Text")
+                txtDist.Size = 13
+                txtDist.Color = Color3.fromRGB(255, 255, 255)
+                txtDist.Outline = true
+                txtDist.Center = true
+
+                ESPdata[box] = {
+                    name = txtName,
+                    dist = txtDist
+                }
+            end
+
+            local sp, onScreen = Camera:WorldToViewportPoint(pos)
+            local name = ESPdata[box].name
+            local distText = ESPdata[box].dist
+
+            name.Text = "[AmmoBox]"
+            name.Position = Vector2.new(sp.X, sp.Y)
+            name.Visible = onScreen
+
+            distText.Text = math.floor(dist) .. "m"
+            distText.Position = Vector2.new(sp.X, sp.Y + 15)
+            distText.Visible = onScreen
+        else
+            if ESPdata[box] then
+                for _, v in pairs(ESPdata[box]) do pcall(function() v:Remove() end) end
+                ESPdata[box] = nil
+            end
+        end
+    end
+end
+
     counter.Text = "ESP: " .. playerESPCount .. "  |  MOB: " .. mobESPCount
     counter.Visible = true
 
@@ -557,7 +610,6 @@ if espToggle() or mobToggle() then
     end
 
 else
-    -- Xoá toàn bộ ESP hiện có (reset tất cả khi tắt ESP)
     for ent, ed in pairs(ESPdata) do
         for _, v in pairs(ed) do
             if typeof(v) == "table" then
@@ -568,7 +620,6 @@ else
         end
     end
     ESPdata = {}
-
     if counter then counter.Visible = false end
 end
 
