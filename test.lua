@@ -245,21 +245,21 @@ if aimbotToggle() then
     local fov = 180
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-    local function IsVisible(part)
+    local function IsVisible(part, model)
         local origin = Camera.CFrame.Position
         local direction = (part.Position - origin)
         local params = RaycastParams.new()
         params.FilterType = Enum.RaycastFilterType.Blacklist
-        params.FilterDescendantsInstances = {LP.Character}
+        params.FilterDescendantsInstances = {LP.Character, Camera}
         local result = workspace:Raycast(origin, direction, params)
-        return not result or result.Instance:IsDescendantOf(part.Parent)
+        return not result or result.Instance:IsDescendantOf(model)
     end
 
-    for _, p in pairs(Players:GetPlayers()) do
+    for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LP and p.Team ~= LP.Team and p.Character then
             local head = p.Character:FindFirstChild("Head")
             local hum = p.Character:FindFirstChild("Humanoid")
-            if head and hum and hum.Health > 0 and IsVisible(head) then
+            if head and hum and hum.Health > 0 and IsVisible(head, p.Character) then
                 local dist3D = (head.Position - Camera.CFrame.Position).Magnitude
                 if dist3D <= maxDist then
                     local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
@@ -276,9 +276,10 @@ if aimbotToggle() then
         end
     end
 
-    if target then
+    RunService:UnbindFromRenderStep("ForceAimbotLock")
+    if target and target.Parent then
         RunService:BindToRenderStep("ForceAimbotLock", Enum.RenderPriority.Camera.Value + 1, function()
-            if not target or not target.Parent then
+            if not target or not target.Parent or target.Parent:FindFirstChild("Humanoid") and target.Parent.Humanoid.Health <= 0 then
                 RunService:UnbindFromRenderStep("ForceAimbotLock")
                 return
             end
